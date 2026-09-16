@@ -1,0 +1,108 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title> · 患者</title>
+<script src="../nurse-portal-source.js"></script><script src="../nurse-portal-mobile-shell.js"></script>
+<style>
+:root{font-family:"Haas","PingFang SC","Microsoft YaHei",sans-serif;color:#181d26}
+*{box-sizing:border-box}
+body{margin:0}
+button,input{font:inherit}
+.m-tools{display:flex;gap:8px;margin-bottom:12px}.m-search{flex:1;min-width:0;height:40px;padding:0 12px;border:1px solid #dddddd;border-radius:8px}.m-add{height:40px;padding:0 12px;border:0;border-radius:8px;background:#181d26;color:#fff;white-space:nowrap}
+.m-patient-card{position:relative;display:block;width:100%;padding:14px;margin-bottom:8px;border:1px solid #dddddd;border-radius:10px;background:#fff;text-align:left}
+.m-patient-main{display:block;width:100%;padding:0;border:0;background:transparent;text-align:left;color:inherit}
+.m-patient-card strong{display:block;font-size:15px;font-weight:500}
+.m-patient-card span{display:block;margin-top:4px;color:#41454d;font-size:12px}
+.m-patient-card .tag{display:inline-block;margin-top:6px;padding:3px 8px;border-radius:999px;font-size:11px}.m-patient-card .success{background:#e7f4f1;color:#006400}.m-patient-card .warning{background:#fff6d8;color:#7a5600}.m-patient-card .danger{background:#fdece5;color:#aa2d00}.m-patient-card .muted{background:#f1f3f5;color:#5b6470}
+.m-patient-actions{display:flex;gap:14px;margin-top:10px}.m-patient-actions button{padding:0;border:0;background:transparent;color:#1b61c9;font-size:13px}.m-patient-actions button.danger{color:#aa2d00}.m-patient-actions.bound-actions{position:absolute;top:14px;right:14px;margin:0}.m-patient-card:has(.bound-actions) .m-patient-main{padding-right:48px}
+.m-empty{padding:32px 16px;border:1px dashed #cbd5dc;border-radius:10px;color:#41454d;text-align:center;font-size:13px}
+.m-modal{position:fixed;inset:0;z-index:30;display:none;align-items:flex-end;background:rgba(24,29,38,.35)}.m-modal.open{display:flex}.m-modal .m-panel{width:100%;padding:20px 16px calc(20px + env(safe-area-inset-bottom));border-radius:16px 16px 0 0;background:#fff}.m-panel h2{margin:0;font-size:18px;font-weight:500}.m-panel p{margin:8px 0 14px;color:#41454d;font-size:13px;line-height:1.5}.m-panel input{width:100%;height:42px;padding:0 12px;border:1px solid #dddddd;border-radius:8px}.m-panel .m-error{min-height:20px;margin:8px 0 0;color:#aa2d00;font-size:12px}.m-panel-actions{display:flex;gap:10px;margin-top:16px}.m-panel-actions button{flex:1;height:42px;border:1px solid #dddddd;border-radius:8px;background:#fff}.m-panel-actions .primary{border-color:#181d26;background:#181d26;color:#fff}
+</style></head><body>
+<script>(()=>{
+const source=window.NURSE_PORTAL_SOURCE
+const nurseId=source.getCurrentNurseId()
+const content=NursePortalMobileShell.mountShell({title:'患者',activeTab:'NM03'})
+
+const tools=document.createElement('div');tools.className='m-tools'
+const searchInput=document.createElement('input')
+searchInput.className='m-search'
+searchInput.placeholder='搜索姓名或手机号'
+const addButton=document.createElement('button');addButton.type='button';addButton.className='m-add';addButton.textContent='新增患者'
+tools.append(searchInput,addButton)
+const list=document.createElement('div')
+content.append(tools,list)
+
+const modal=document.createElement('div');modal.className='m-modal'
+modal.innerHTML='<form class="m-panel" id="binding-form"><h2>新增患者</h2><p>输入患者手机号。已签署知情同意的患者将收到绑定申请，等待患者确认。</p><input id="binding-phone" inputmode="tel" placeholder="请输入患者手机号" required><div class="m-error" id="binding-error"></div><div class="m-panel-actions"><button type="button" id="binding-cancel">取消</button><button class="primary" type="submit">发起绑定申请</button></div></form>'
+document.body.append(modal)
+
+const confirmModal=document.createElement('div');confirmModal.className='m-modal'
+confirmModal.innerHTML='<section class="m-panel"><h2 id="confirm-title">确认操作</h2><p id="confirm-copy"></p><div class="m-panel-actions"><button type="button" id="confirm-cancel">取消</button><button class="primary" type="button" id="confirm-ok">确认</button></div></section>'
+document.body.append(confirmModal)
+
+let pendingAction=null
+function ask(title,copy,action){document.querySelector('#confirm-title').textContent=title;document.querySelector('#confirm-copy').textContent=copy;pendingAction=action;confirmModal.classList.add('open')}
+function boundToOtherNurse(patientId){return source.get('bindings').find(b=>b.patientId===patientId&&b.status==='bound'&&b.nurseId!==nurseId)}
+function myBindingFor(patientId){const mine=source.get('bindings').filter(b=>b.patientId===patientId&&b.nurseId===nurseId).sort((a,b)=>(b.requestedAt||'').localeCompare(a.requestedAt||''))[0];return mine?{status:mine.status,binding:mine}:{status:'none',binding:null}}
+function statusTag(status){if(status==='bound')return['success','已绑定'];if(status==='pending')return['warning','待患者确认'];if(status==='rejected')return['danger','已拒绝'];return['muted','未绑定']}
+function viewPatient(patientId){source.setSelectedPatientId(patientId);parent.postMessage({type:'prototype:navigation-request',pageId:'NM04'},'*')}
+function textButton(label,className,handler){const button=document.createElement('button');button.type='button';button.textContent=label;if(className)button.className=className;button.onclick=handler;return button}
+
+function updateBinding(patient){
+  const bindings=source.get('bindings')
+  bindings.push({id:'bind-'+Date.now(),patientId:patient.id,nurseId,status:'pending',requestedAt:'2026-09-09 刚刚'})
+  source.set('bindings',bindings)
+}
+
+function render(){
+  list.replaceChildren()
+  const keyword=searchInput.value.trim()
+  const all=source.get('patients').filter(patient=>myBindingFor(patient.id).status!=='none')
+  const rows=all.filter(patient=>!keyword||(patient.name+patient.phone).includes(keyword))
+  if(!all.length){
+    const empty=document.createElement('div');empty.className='m-empty';empty.textContent='暂无患者，点击“新增患者”发起第一条绑定申请。'
+    list.append(empty)
+  }else if(!rows.length){
+    const empty=document.createElement('div');empty.className='m-empty';empty.textContent='未找到符合条件的患者。'
+    list.append(empty)
+  }else{
+    rows.forEach(patient=>{
+      const info=myBindingFor(patient.id)
+      const [tagClass,tagText]=statusTag(info.status)
+      const card=document.createElement('article');card.className='m-patient-card'
+      const main=document.createElement('button');main.type='button';main.className='m-patient-main';main.innerHTML='<strong>'+patient.name+'</strong><span>'+patient.phone+' · 患者编号 '+patient.patientNo+'</span><i class="tag '+tagClass+'">'+tagText+'</i>';main.onclick=()=>viewPatient(patient.id)
+      const actions=document.createElement('div');actions.className='m-patient-actions'
+      if(info.status==='bound'){
+        actions.classList.add('bound-actions')
+        actions.append(textButton('解绑','danger',()=>ask('确认解绑该患者？','解绑后原申请人立即失去访问权限；该患者名下未完成的随访任务将被取消。',()=>{
+          const bindings=source.get('bindings');const target=bindings.find(binding=>binding.id===info.binding.id);if(target)target.status='unbound';source.set('bindings',bindings)
+          const tasks=source.get('tasks');tasks.filter(task=>task.patientId===patient.id&&task.nurseId===nurseId&&['pending','due-today','overdue'].includes(task.status)).forEach(task=>{task.status='cancelled';task.cancelReason='申请人解绑患者'});source.set('tasks',tasks);render()
+        })))
+      }else if(info.status==='pending'){
+        actions.append(textButton('撤销申请','danger',()=>{source.set('bindings',source.get('bindings').filter(binding=>binding.id!==info.binding.id));render()}))
+      }else if(info.status==='rejected'){
+        actions.append(textButton('重新申请','',()=>{updateBinding(patient);render()}))
+      }
+      card.append(main,actions)
+      list.append(card)
+    })
+  }
+}
+searchInput.oninput=render
+addButton.onclick=()=>{document.querySelector('#binding-phone').value='';document.querySelector('#binding-error').textContent='';modal.classList.add('open')}
+document.querySelector('#binding-cancel').onclick=()=>modal.classList.remove('open')
+document.querySelector('#binding-form').onsubmit=event=>{
+  event.preventDefault()
+  const phone=document.querySelector('#binding-phone').value.trim()
+  const error=document.querySelector('#binding-error')
+  if(!phone){error.textContent='请输入患者手机号。';return}
+  const patient=source.get('patients').find(item=>item.phone.replace(/\s/g,'')===phone.replace(/\s/g,''))
+  if(!patient){error.textContent='未找到该手机号对应的患者。';return}
+  if(!patient.consentSigned){error.textContent='该患者尚未签署知情同意，暂不能发起绑定申请。';return}
+  if(boundToOtherNurse(patient.id)){error.textContent='该患者已绑定其他申请人，无法发起申请。';return}
+  const info=myBindingFor(patient.id)
+  if(info.status==='bound'||info.status==='pending'){error.textContent='该患者已存在绑定关系或待确认申请。';return}
+  updateBinding(patient);modal.classList.remove('open');render()
+}
+document.querySelector('#confirm-cancel').onclick=()=>confirmModal.classList.remove('open')
+document.querySelector('#confirm-ok').onclick=()=>{confirmModal.classList.remove('open');pendingAction&&pendingAction();pendingAction=null}
+render()
+parent.postMessage({type:'prototype:page-ready',pageId:'NM03'},'*')
+})()</script></body></html>

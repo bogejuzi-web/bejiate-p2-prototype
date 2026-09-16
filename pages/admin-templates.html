@@ -1,0 +1,113 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title> · 模板配置</title>
+<script src="../nurse-portal-source.js"></script><script src="../admin-portal-shell.js"></script>
+<link rel="stylesheet" href="../nurse-portal-layout.css">
+<style>
+.tools{display:flex;justify-content:space-between;gap:18px;align-items:center;margin:24px 0}
+.search{width:280px;height:44px;padding:0 12px;border:1px solid #dddddd;border-radius:6px}
+.template-row{grid-template-columns:1.25fr .8fr .9fr .7fr .8fr 1.2fr}
+.template-row strong{display:block;font-weight:500}
+.template-row small{display:block;margin-top:4px;color:#41454d;font-size:12px}
+.fields-chip{display:inline-block;padding:6px 8px;border-radius:5px;background:#f4f6f8;color:#41454d;font-size:12px;margin:2px}
+</style></head><body><main class="app"><aside class="side"></aside><section class="main" data-change-id="A08-C01">
+<header class="top"><h1>模板配置</h1><button class="primary" id="create">创建随访模板</button></header>
+<section class="tools"><nav class="tabs"><button class="active" data-filter="public">随访模板</button><button data-filter="disabled">已停用</button></nav><input id="search" class="search" placeholder="搜索模板名称或创建人"></section>
+<section class="table"><div class="row head template-row"><span>模板名称</span><span>创建人</span><span>可见范围</span><span>引用计划</span><span>状态</span><span>操作</span></div><div id="list"></div></section>
+</section></main>
+<div class="drawer" id="drawer"><section class="panel"><h2 id="detail-title"></h2><p id="detail-meta" style="color:#41454d;font-size:13px"></p><div id="detail-fields" style="margin:16px 0"></div><div class="actions"><button type="button" id="edit-btn">编辑模板</button><button type="button" id="close-btn">关闭</button></div></section></div>
+<div class="dialog" id="confirm"><section class="panel"><h2 id="confirm-title">确认操作</h2><p id="confirm-copy"></p><div class="actions"><button type="button" id="confirm-cancel">取消</button><button class="primary" id="confirm-ok">确认</button></div></section></div>
+<script>(()=>{
+const q=s=>document.querySelector(s)
+const source=window.NURSE_PORTAL_SOURCE
+AdminPortalShell.mountSidebar('.side','A08')
+
+let filter='public',chosen=null,pending=null
+function ask(title,copy,action){q('#confirm-title').textContent=title;q('#confirm-copy').textContent=copy;pending=action;q('#confirm').classList.add('open')}
+q('#confirm-cancel').onclick=()=>q('#confirm').classList.remove('open')
+q('#confirm-ok').onclick=()=>{q('#confirm').classList.remove('open');pending&&pending();pending=null}
+
+function creatorName(t){return t.creatorName||'-'}
+
+function render(){
+  const list=q('#list')
+  list.replaceChildren()
+  const keyword=q('#search').value.trim()
+  const rows=source.get('templates').filter(t=>{
+    const scopeMatch=filter==='disabled'?t.status==='disabled':t.visibility==='public'&&t.status==='active'
+    return scopeMatch&&(creatorName(t)+t.name).includes(keyword)
+  })
+  if(!rows.length){
+    const empty=document.createElement('div');empty.className='empty';empty.textContent='未找到符合条件的随访模板。'
+    list.append(empty);return
+  }
+  rows.forEach(item=>{
+    const row=document.createElement('div');row.className='row template-row'
+    const statusCls=item.status==='active'?'success':'muted'
+    const statusText=item.status==='active'?'启用':'已停用'
+    row.innerHTML='<span><strong>'+item.name+'</strong><small>更新于 '+item.updatedAt+'</small></span><span>'+creatorName(item)+'</span><span>'+(item.visibility==='private'?'申请人专用':'全部申请人')+'</span><span>'+item.usedByPlanCount+' 个</span><span><i class="tag '+statusCls+'">'+statusText+'</i></span>'
+    const ops=document.createElement('span');ops.style.cssText='display:flex;gap:12px;justify-content:flex-end'
+    const view=document.createElement('button');view.type='button';view.className='text-btn';view.textContent='查看详情'
+    view.onclick=()=>openDetail(item)
+    ops.append(view)
+    if(item.status==='active'){
+      const disable=document.createElement('button');disable.type='button';disable.className='text-btn danger';disable.textContent='停用'
+      disable.onclick=()=>ask('确认停用模板？','停用后不能用于新建随访计划；既有计划和历史记录仍保留该模板。',()=>{
+        const templates=source.get('templates')
+        const target=templates.find(x=>x.id===item.id)
+        if(target){target.status='disabled';target.updatedAt='2026-09-09 刚刚'}
+        source.set('templates',templates)
+        render()
+      })
+      ops.append(disable)
+    }else{
+      const enable=document.createElement('button');enable.type='button';enable.className='text-btn';enable.textContent='恢复'
+      enable.onclick=()=>{
+        const templates=source.get('templates')
+        const target=templates.find(x=>x.id===item.id)
+        if(target){target.status='active';target.updatedAt='2026-09-09 刚刚'}
+        source.set('templates',templates)
+        filter=target.visibility==='public'?'public':'disabled'
+        document.querySelectorAll('[data-filter]').forEach(x=>x.classList.toggle('active',x.dataset.filter===filter))
+        render()
+      }
+      ops.append(enable)
+      if(item.usedByPlanCount===0){
+        const del=document.createElement('button');del.type='button';del.className='text-btn danger';del.textContent='删除'
+        del.onclick=()=>ask('确认删除模板？','删除后不可恢复。',()=>{
+          source.set('templates',source.get('templates').filter(x=>x.id!==item.id))
+          render()
+        })
+        ops.append(del)
+      }
+    }
+    row.append(ops)
+    list.append(row)
+  })
+}
+
+function openDetail(item){
+  chosen=item
+  q('#detail-title').textContent=item.name
+  q('#detail-meta').textContent='创建人：'+creatorName(item)+' · 更新于 '+item.updatedAt+' · 已被 '+item.usedByPlanCount+' 个计划引用'
+  q('#detail-fields').innerHTML=item.fields.map(f=>'<span class="fields-chip">'+f.label+(f.required?'（必填）':'')+'</span>').join('')
+  q('#edit-btn').hidden=item.visibility==='private'
+  q('#drawer').classList.add('open')
+}
+q('#close-btn').onclick=()=>q('#drawer').classList.remove('open')
+q('#edit-btn').onclick=()=>{
+  source.setEditingTemplateId(chosen.id)
+  parent.postMessage({type:'prototype:navigation-request',pageId:'A09'},'*')
+}
+q('#create').onclick=()=>{
+  source.setEditingTemplateId('')
+  parent.postMessage({type:'prototype:navigation-request',pageId:'A09'},'*')
+}
+document.querySelectorAll('[data-filter]').forEach(btn=>btn.addEventListener('click',()=>{
+  filter=btn.dataset.filter
+  document.querySelectorAll('[data-filter]').forEach(x=>x.classList.toggle('active',x===btn))
+  render()
+}))
+q('#search').oninput=render
+
+render()
+parent.postMessage({type:'prototype:page-ready',pageId:'A08'},'*')
+})()</script></body></html>

@@ -1,0 +1,150 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title> · 申请人账号</title>
+<script src="../nurse-portal-source.js"></script><script src="../admin-portal-shell.js"></script>
+<link rel="stylesheet" href="../nurse-portal-layout.css">
+<style>
+.tools{display:flex;gap:12px;margin:24px 0}
+.tools input{width:320px;height:44px;padding:0 13px;border:1px solid #dddddd;border-radius:6px;background:#fff}
+.nurse-row{grid-template-columns:1.2fr 1fr .9fr .9fr .8fr 1.4fr}
+.nurse-row .name strong{display:block;font-weight:500}
+.nurse-row .name span{color:#41454d;font-size:12px}
+.nurse-row .ops{display:flex;gap:14px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+.detail-block{margin:16px 0}
+.detail-block h3{margin:0 0 8px;font-size:14px;color:#41454d;font-weight:500}
+.detail-block .kv{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eef0f2;font-size:14px}
+.detail-block .kv:last-child{border:0}
+.detail-block .chip{display:inline-block;margin:2px 6px 2px 0;padding:4px 10px;border-radius:6px;background:#f4f6f8;font-size:13px}
+</style></head><body><main class="app"><aside class="side"></aside><section class="main" data-change-id="A02-C01"><header class="top"><h1>申请人账号</h1><button class="primary" id="add">新建申请人账号</button></header>
+<div class="tools"><input id="search" placeholder="搜索申请人姓名或账号"></div>
+<section class="table"><div class="row head nurse-row"><span>申请人</span><span>账号</span><span>所属</span><span>绑定患者</span><span>状态</span><span>操作</span></div><div id="list"></div></section>
+</section></main>
+
+<div class="drawer" id="form-drawer"><form class="panel" id="form"><h2>新建申请人账号</h2><p>创建申请人账号后，申请人可使用该账号登录申请人端。</p>
+<label class="field"><span>申请人姓名</span><input id="f-name" placeholder="请输入申请人姓名" required></label>
+<label class="field"><span>登录账号</span><input id="f-account" placeholder="请输入登录账号" required></label>
+<label class="field"><span>所属科室</span><input id="f-department" placeholder="请输入所属科室" required></label>
+<label class="field"><span>初始密码</span><input id="f-password" placeholder="请输入初始密码" value="123456" required></label>
+<p class="notice" id="form-error"></p>
+<div class="actions"><button type="button" id="form-cancel">取消</button><button class="primary" type="submit">创建账号</button></div></form></div>
+
+<div class="drawer" id="detail-drawer"><section class="panel"><h2 id="detail-name">申请人详情</h2><div id="detail-body"></div><div class="actions"><button type="button" id="detail-close">关闭</button></div></section></div>
+
+<div class="dialog" id="confirm"><section class="panel"><h2 id="confirm-title">确认操作</h2><p id="confirm-copy"></p><div class="actions"><button type="button" id="confirm-cancel">取消</button><button class="primary" id="confirm-ok">确认</button></div></section></div>
+
+<script>(()=>{
+const q=s=>document.querySelector(s)
+const source=window.NURSE_PORTAL_SOURCE
+AdminPortalShell.mountSidebar('.side','A02')
+
+let pending=null
+function ask(title,copy,action){q('#confirm-title').textContent=title;q('#confirm-copy').textContent=copy;pending=action;q('#confirm').classList.add('open')}
+q('#confirm-cancel').onclick=()=>q('#confirm').classList.remove('open')
+q('#confirm-ok').onclick=()=>{q('#confirm').classList.remove('open');pending&&pending();pending=null}
+
+function boundPatients(nurseId){
+  const bindings=source.get('bindings').filter(b=>b.nurseId===nurseId&&b.status==='bound')
+  const patients=source.get('patients')
+  return bindings.map(b=>patients.find(p=>p.id===b.patientId)).filter(Boolean)
+}
+
+function render(){
+  const list=q('#list')
+  list.replaceChildren()
+  const keyword=q('#search').value.trim()
+  const nurses=source.get('nurses')
+  const filtered=nurses.filter(n=>!keyword||(n.name+n.account).includes(keyword))
+  if(!nurses.length){
+    const empty=document.createElement('div');empty.className='empty';empty.textContent='暂无申请人账号，点击右上角"新建申请人账号"创建第一个账号。'
+    list.append(empty);return
+  }
+  if(!filtered.length){
+    const empty=document.createElement('div');empty.className='empty';empty.textContent='未找到符合条件的申请人账号。'
+    list.append(empty);return
+  }
+  filtered.forEach(nurse=>{
+    const patients=boundPatients(nurse.id)
+    const row=document.createElement('div');row.className='row nurse-row'
+    const statusCls=nurse.status==='active'?'tag success':'tag muted'
+    const statusText=nurse.status==='active'?'启用':'停用'
+    row.innerHTML=`<span class="name"><strong>${nurse.name}</strong><span>${nurse.role||'申请人'}</span></span><span>${nurse.account}</span><span>${nurse.department||'-'}</span><span>${patients.length} 人</span><span><i class="${statusCls}">${statusText}</i></span>`
+    const ops=document.createElement('span');ops.className='ops'
+    const view=document.createElement('button');view.type='button';view.className='text-btn';view.textContent='查看'
+    view.onclick=()=>openDetail(nurse)
+    ops.append(view)
+    if(nurse.status==='active'){
+      const disable=document.createElement('button');disable.type='button';disable.className='text-btn danger';disable.textContent='停用'
+      disable.onclick=()=>ask('确认停用该申请人账号？','停用后该申请人无法登录；申请人及其关联患者数据均保留。',()=>{
+        const nurses=source.get('nurses')
+        const target=nurses.find(n=>n.id===nurse.id)
+        if(target)target.status='disabled'
+        source.set('nurses',nurses)
+        render()
+      })
+      ops.append(disable)
+    }else{
+      const enable=document.createElement('button');enable.type='button';enable.className='text-btn';enable.textContent='启用'
+      enable.onclick=()=>{
+        const nurses=source.get('nurses')
+        const target=nurses.find(n=>n.id===nurse.id)
+        if(target)target.status='active'
+        source.set('nurses',nurses)
+        render()
+      }
+      ops.append(enable)
+    }
+    if(!patients.length){
+      const remove=document.createElement('button');remove.type='button';remove.className='text-btn danger';remove.textContent='删除'
+      remove.onclick=()=>ask('确认删除该申请人账号？','删除后该申请人账号将从列表中移除，且无法恢复。',()=>{
+        source.set('nurses',source.get('nurses').filter(item=>item.id!==nurse.id))
+        render()
+      })
+      ops.append(remove)
+    }
+    row.append(ops)
+    list.append(row)
+  })
+}
+
+function openDetail(nurse){
+  q('#detail-name').textContent=nurse.name+' · 账号详情'
+  const patients=boundPatients(nurse.id)
+  const body=q('#detail-body')
+  body.replaceChildren()
+  const base=document.createElement('div');base.className='detail-block'
+  base.innerHTML='<h3>基本信息</h3>'+
+    `<div class="kv"><span>姓名</span><strong>${nurse.name}</strong></div>`+
+    `<div class="kv"><span>登录账号</span><strong>${nurse.account}</strong></div>`+
+    `<div class="kv"><span>所属科室</span><strong>${nurse.department||'-'}</strong></div>`+
+    `<div class="kv"><span>账号状态</span><strong>${nurse.status==='active'?'启用':'停用'}</strong></div>`
+  body.append(base)
+  const bind=document.createElement('div');bind.className='detail-block'
+  const bindTitle=document.createElement('h3');bindTitle.textContent='绑定患者（'+patients.length+'）'
+  bind.append(bindTitle)
+  if(patients.length){
+    patients.forEach(p=>{const chip=document.createElement('span');chip.className='chip';chip.textContent=p.name+' · '+p.patientNo;bind.append(chip)})
+  }else{
+    const none=document.createElement('p');none.style.cssText='color:#41454d;font-size:13px;margin:0';none.textContent='暂无已绑定患者。'
+    bind.append(none)
+  }
+  body.append(bind)
+  q('#detail-drawer').classList.add('open')
+}
+q('#detail-close').onclick=()=>q('#detail-drawer').classList.remove('open')
+
+q('#search').oninput=render
+q('#add').onclick=()=>{q('#f-name').value='';q('#f-account').value='';q('#f-department').value='';q('#f-password').value='123456';q('#form-error').textContent='';q('#form-drawer').classList.add('open')}
+q('#form-cancel').onclick=()=>q('#form-drawer').classList.remove('open')
+q('#form').onsubmit=e=>{
+  e.preventDefault()
+  const name=q('#f-name').value.trim(),account=q('#f-account').value.trim(),department=q('#f-department').value.trim(),password=q('#f-password').value.trim()
+  if(!name||!account||!department||!password){q('#form-error').textContent='请完整填写所有字段。';return}
+  const nurses=source.get('nurses')
+  if(nurses.some(n=>n.account===account)){q('#form-error').textContent='该登录账号已存在，请更换。';return}
+  nurses.unshift({id:'nurse-'+Date.now(),name,account,password,department,status:'active'})
+  source.set('nurses',nurses)
+  q('#form-drawer').classList.remove('open')
+  render()
+}
+
+render()
+parent.postMessage({type:'prototype:page-ready',pageId:'A02'},'*')
+})()</script></body></html>

@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title> · 服务</title>
+  <style>
+    :root { color: #181d26; background: #fff; font-family: "Haas", "PingFang SC", "Microsoft YaHei", sans-serif; } * { box-sizing: border-box; } body { margin: 0; background: #fff; } button { font: inherit; cursor: pointer; }.page { min-height: 100vh; padding: 30px 24px 100px; }.binding { padding: 22px; border-radius: 12px; color: #fff; background: #0a2e0e; }.binding h2 { margin: 0 0 16px; font-size: 16px; font-weight: 500; }.binding-status { display: inline-flex; padding: 7px 10px; border: 1px solid rgba(255,255,255,.34); border-radius: 999px; font-size: 13px; }.binding p { margin: 16px 0 0; color: #fff; font-size: 13px; line-height: 1.55; }.binding button { margin-top: 16px; padding: 8px 12px; border: 1px solid #fff; border-radius: 6px; color: #181d26; background: #fff; font-size: 13px; }.binding-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }.binding-actions button { width: 100%; }.binding-actions .reject { color: #fff; background: transparent; }.follow-up { margin-top: 32px; }.switcher { display: grid; grid-template-columns: 1fr 1fr; padding: 4px; border: 1px solid #dddddd; border-radius: 10px; background: #f8fafc; }.switcher button { min-height: 38px; border: 0; border-radius: 6px; color: #41454d; background: transparent; font-size: 13px; }.switcher button[aria-selected="true"] { color: #181d26; background: #fff; box-shadow: 0 1px 3px rgba(24,29,38,.08); font-weight: 500; }.view { margin-top: 18px; }.view[hidden] { display: none; }.card { padding: 16px; border: 1px solid #dddddd; border-radius: 10px; }.card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }.card strong { display: block; font-size: 14px; font-weight: 500; }.card p { margin: 7px 0 0; color: #41454d; font-size: 13px; line-height: 1.55; }.tag { flex: 0 0 auto; padding: 4px 7px; border-radius: 999px; color: #1d1f25; background: #f5e9d4; font-size: 11px; }.tag.done { color: #fff; background: #0a2e0e; }.calendar-toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }.calendar-toolbar button { width: 32px; height: 32px; border: 1px solid #dddddd; border-radius: 6px; color: #181d26; background: #fff; }.calendar-title { margin: 0; font-size: 16px; font-weight: 500; }.weekdays, .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }.weekdays { margin-bottom: 6px; color: #41454d; font-size: 11px; text-align: center; }.day { min-height: 42px; padding: 5px; border: 1px solid #dddddd; border-radius: 6px; color: #41454d; background: #fff; font-size: 12px; text-align: left; }.day.other { color: #9297a0; background: #f8fafc; }.day small { display: block; margin-top: 3px; font-size: 9px; }.day.plan { color: #181d26; background: #f5e9d4; }.day.done { color: #fff; border-color: #0a2e0e; background: #0a2e0e; }.day.selected { outline: 2px solid #181d26; outline-offset: 1px; }.calendar-detail { margin-top: 16px; }.empty { margin: 0; color: #41454d; font-size: 13px; }.tabbar { position: fixed; right: 0; bottom: 0; left: 0; display: grid; grid-template-columns: repeat(3, 1fr); min-height: 68px; padding: 7px 18px calc(7px + env(safe-area-inset-bottom)); border-top: 1px solid #dddddd; background: #fff; }.tab { border: 0; color: #41454d; background: transparent; font-size: 12px; }.tab[aria-current="page"] { color: #181d26; font-weight: 500; }.highlight { outline: 3px solid #f4d35e; outline-offset: 4px; border-radius: 8px; }
+  </style>
+  <style>
+    #binding-actions[hidden], #binding-toggle { display: none !important; }
+  </style>
+</head>
+<body>
+  <main class="page"><section class="binding" data-change-id="P04-C01"><h2>服务申请人</h2><span class="binding-status" id="binding-status">待绑定</span><p id="binding-copy">需要申请人绑定后使用服务</p><div class="binding-actions" id="binding-actions" hidden><button class="reject" id="binding-reject" type="button">不同意</button><button id="binding-accept" type="button">同意</button></div><button id="binding-toggle" type="button">模拟申请人添加患者</button></section><section class="follow-up" data-change-id="P04-C02"><div class="switcher" role="tablist" aria-label="随访查看方式"><button id="today-tab" type="button" role="tab" aria-selected="true">今日随访</button><button id="all-tab" type="button" role="tab" aria-selected="false">全部随访</button></div><div class="view" id="today-view"><article class="card"><div class="card-header"><strong>本周健康随访</strong><span class="tag">待随访</span></div><p>今日 09:00 · 血压、用药情况、身体不适</p></article></div><div class="view" id="all-view" hidden><div class="calendar-toolbar"><button id="prev-month" type="button" aria-label="上个月">‹</button><h2 class="calendar-title" id="calendar-title"></h2><button id="next-month" type="button" aria-label="下个月">›</button></div><div class="weekdays"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span></div><div class="calendar" id="calendar"></div><div class="calendar-detail" id="calendar-detail"></div></div></section></main><nav class="tabbar" data-change-id="P04-C03" aria-label="患者端导航"><button class="tab" type="button" aria-current="page">服务</button><button class="tab" type="button" data-target="P05">健康档案</button><button class="tab" type="button" data-target="P06">我的</button></nav>
+  <script>
+    (() => { const status = document.querySelector('#binding-status'), copy = document.querySelector('#binding-copy'), toggle = document.querySelector('#binding-toggle'), todayTab = document.querySelector('#today-tab'), allTab = document.querySelector('#all-tab'), todayView = document.querySelector('#today-view'), allView = document.querySelector('#all-view'), calendarTitle = document.querySelector('#calendar-title'), calendar = document.querySelector('#calendar'), detail = document.querySelector('#calendar-detail'); let bound = false, year = 2026, month = 8, selected = 9; const followUps = { '2026-8-2': { title: '上周健康随访', state: '已完成', kind: 'done', copy: '9 月 2 日 · 血压、用药情况、身体不适' }, '2026-8-9': { title: '本周健康随访', state: '待随访', kind: 'plan', copy: '9 月 9 日 09:00 · 血压、用药情况、身体不适' } }; toggle.addEventListener('click', () => { bound = !bound; status.textContent = bound ? '已绑定' : '待绑定'; copy.textContent = bound ? '当前已绑定申请人：刘敏申请人' : '需要申请人绑定后使用服务'; toggle.textContent = bound ? '模拟待绑定状态' : '模拟已绑定状态'; parent.postMessage({ type: 'prototype:state-changed', pageId: 'P04', scenarioId: bound ? 'P04-S02' : 'P04-S01' }, '*'); }); function setView(view) { const all = view === 'all'; allTab.setAttribute('aria-selected', String(all)); todayTab.setAttribute('aria-selected', String(!all)); allView.hidden = !all; todayView.hidden = all; if (all) renderCalendar(); } todayTab.addEventListener('click', () => setView('today')); allTab.addEventListener('click', () => setView('all')); function renderCalendar() { calendarTitle.textContent = `${year} 年 ${month + 1} 月`; calendar.replaceChildren(); const offset = (new Date(year, month, 1).getDay() + 6) % 7, days = new Date(year, month + 1, 0).getDate(), previousDays = new Date(year, month, 0).getDate(), cells = Math.ceil((offset + days) / 7) * 7; for (let index = 0; index < cells; index += 1) { const day = document.createElement('button'); day.type = 'button'; let date, activeMonth = true; if (index < offset) { date = previousDays - offset + index + 1; activeMonth = false; } else if (index >= offset + days) { date = index - offset - days + 1; activeMonth = false; } else date = index - offset + 1; const key = `${year}-${month}-${date}`, item = activeMonth ? followUps[key] : undefined; day.className = `day${activeMonth ? '' : ' other'}${item ? ` ${item.kind}` : ''}${activeMonth && date === selected ? ' selected' : ''}`; day.innerHTML = `${date}${item ? `<small>${item.state}</small>` : ''}`; if (activeMonth) day.addEventListener('click', () => { selected = date; renderCalendar(); }); calendar.append(day); } const item = followUps[`${year}-${month}-${selected}`]; if (item) detail.innerHTML = `<article class="card"><div class="card-header"><strong>${item.title}</strong><span class="tag${item.kind === 'done' ? ' done' : ''}">${item.state}</span></div><p>${item.copy}</p></article>`; else detail.innerHTML = '<p class="empty">该日期暂无随访安排</p>'; } document.querySelector('#prev-month').addEventListener('click', () => { month -= 1; if (month < 0) { month = 11; year -= 1; } selected = 1; renderCalendar(); }); document.querySelector('#next-month').addEventListener('click', () => { month += 1; if (month > 11) { month = 0; year += 1; } selected = 1; renderCalendar(); }); document.querySelectorAll('[data-target]').forEach((button) => button.addEventListener('click', () => parent.postMessage({ type: 'prototype:navigation-request', pageId: button.dataset.target }, '*'))); function highlight(changeId) { const target = document.querySelector(`[data-change-id="${changeId}"]`); if (!target) return; target.classList.add('highlight'); target.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => target.classList.remove('highlight'), 1800); parent.postMessage({ type: 'prototype:highlight-result', changeId, success: true }, '*'); } window.addEventListener('message', (event) => { if ((event.data || {}).type === 'prototype:highlight') highlight(event.data.changeId); }); parent.postMessage({ type: 'prototype:page-ready', pageId: 'P04' }, '*'); })();
+  </script>
+  <script>
+    (() => {
+      const status = document.querySelector('#binding-status');
+      const copy = document.querySelector('#binding-copy');
+      const toggle = document.querySelector('#binding-toggle');
+      const actions = document.querySelector('#binding-actions');
+      const accept = document.querySelector('#binding-accept');
+      const reject = document.querySelector('#binding-reject');
+      let state = 'unbound';
+
+      function notify() {
+        const scenarioId = state === 'bound' ? 'P04-S03' : state === 'requested' ? 'P04-S02' : 'P04-S01';
+        parent.postMessage({ type: 'prototype:state-changed', pageId: 'P04', scenarioId }, '*');
+      }
+
+      function render() {
+        const isRequested = state === 'requested';
+        const isBound = state === 'bound';
+        status.textContent = isBound ? '已绑定' : isRequested ? '待确认' : '待绑定';
+        copy.textContent = isBound
+          ? '当前已绑定申请人：刘敏申请人'
+          : isRequested
+            ? '刘敏申请人已添加您为患者，请确认是否同意接受服务。'
+            : '需要申请人绑定后使用服务';
+        actions.hidden = !isRequested;
+        toggle.hidden = isRequested;
+        toggle.textContent = isBound ? '模拟待绑定状态' : '模拟申请人添加患者';
+        notify();
+      }
+
+      toggle.addEventListener('click', (event) => {
+        event.stopImmediatePropagation();
+        state = state === 'bound' ? 'unbound' : 'requested';
+        render();
+      }, true);
+      accept.addEventListener('click', () => { state = 'bound'; render(); });
+      reject.addEventListener('click', () => { state = 'unbound'; render(); });
+      window.addEventListener('message', (event) => {
+        const message = event.data || {};
+        if (message.type === 'prototype:simulate' && ['unbound', 'requested', 'bound'].includes(message.context?.bindingState)) {
+          state = message.context.bindingState;
+          render();
+        }
+      });
+      render();
+    })();
+  </script>
+</body>
+</html>

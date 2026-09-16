@@ -1,0 +1,192 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title> · 工作台</title>
+<script src="../nurse-portal-source.js"></script><script src="../nurse-portal-shell.js"></script><script src="../activity-application-shared.js"></script><script src="../followup-alert-shared.js"></script><script src="../followup-form-shared.js"></script>
+<link rel="stylesheet" href="../nurse-portal-layout.css">
+<style>
+.score-card{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:20px 0 8px;padding:20px 24px;border:1px solid #dddddd;border-radius:10px;background:#fff;text-align:left;width:100%}
+.score-card h2{margin:0 0 4px;font-size:16px;font-weight:500}
+.score-card p{margin:0;color:#41454d;font-size:13px}
+.score-metrics{display:flex;gap:24px}
+.score-metrics div{text-align:right}
+.score-metrics strong{display:block;font-size:20px;font-weight:500}
+.score-metrics span{display:block;margin-top:2px;color:#41454d;font-size:12px}
+.manual-action{display:flex;justify-content:center;margin:12px 0 8px}.manual-action .primary{width:min(360px,100%)}
+.task{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:20px;border:1px solid #dddddd;border-radius:10px;background:#fff}
+.task .content strong{display:block;margin:8px 0 4px;font-size:16px;font-weight:500}
+.task .content p{margin:0;color:#41454d;font-size:13px}
+.task .phone-line{display:flex;align-items:center;gap:8px;margin:0 0 4px;color:#41454d;font-size:13px}
+.task .copy-phone{padding:2px 7px;border:1px solid #dddddd;border-radius:5px;color:#1b61c9;background:#fff;font-size:12px;cursor:pointer}
+.task .copy-phone:focus-visible{outline:2px solid #458fff;outline-offset:2px}
+.task .start{padding:9px 14px;border:0;border-radius:8px;background:#181d26;color:#fff;white-space:nowrap}
+.task .start.overdue{background:#aa2d00}
+.task-section{margin-top:20px}.task-section h2{margin:0;font-size:18px;font-weight:500}.task-section>p{margin:6px 0 10px;color:#41454d;font-size:13px}.task-section .cards{display:grid;gap:10px}.task-section .task{padding:16px 20px}.activity-notices{display:none;padding:9px 14px;border:1px solid #b9c7d0;border-radius:8px;background:#fff;color:#155f8d;font:inherit}.activity-notices.visible{display:inline-block}.notice-count{display:inline-block;min-width:18px;margin-left:4px;padding:1px 5px;border-radius:99px;background:#b42318;color:#fff;font-size:12px}
+.alert-summary{display:none;margin:18px 0;padding:18px;border:1px solid #e7b8b0;border-radius:10px;background:#fff7f5}.alert-summary.visible{display:flex;align-items:center;justify-content:space-between;gap:16px}.alert-summary h2{margin:0 0 4px;font-size:16px}.alert-summary p{margin:0;color:#41454d;font-size:13px}.alert-summary button{padding:9px 14px;border:1px solid #b42318;border-radius:8px;background:#fff;color:#b42318}
+</style></head><body><main class="app"><aside class="side"></aside><section class="main" data-change-id="N02-C01"><header class="top"><div><p class="eyebrow" id="today-label"></p><h1>工作台</h1></div><button class="activity-notices" id="activity-notices">活动申请通知 <span class="notice-count" id="notice-count" hidden></span></button></header>
+<section class="score-card" aria-label="随访任务统计">
+  <div><h2>随访任务</h2><p>当前待处理的随访任务</p></div>
+  <div class="score-metrics"><div><strong id="task-pending">0</strong><span>待随访</span></div><div><strong id="task-overdue">0</strong><span>已逾期</span></div></div>
+</section>
+<section class="alert-summary" id="alert-summary"><div><h2>随访预警 <span id="alert-count"></span></h2><p id="alert-copy"></p></div><button type="button" id="alert-link">查看预警</button></section>
+<section class="manual-action"><button class="primary" type="button" id="manual-followup">记录随访</button></section>
+<section id="task-list" style="margin-top:24px"></section>
+</section></main>
+<div class="drawer" id="drawer"><form class="panel" id="form"><h2 id="form-title">填写随访内容</h2><p id="form-hint">提交后将自动更新该患者健康档案，并保留本次随访记录。</p><label class="field" id="form-method-row">服务方式<select id="form-method"><option value="phone">电话随访</option><option value="offline">线下随访</option><option value="immediate">随时随访</option></select></label><div id="form-fields"></div><p id="form-error" class="notice"></p><div class="actions"><button type="button" id="cancel">取消</button><button class="primary" type="submit">提交随访</button></div></form></div>
+<div class="drawer" id="manual-followup-drawer"><form class="panel" id="manual-followup-form"><h2>记录随访</h2><p>选择随访模板和患者后填写内容，本次记录不关联既有任务。</p><label class="field">随访模板<select id="manual-template" required></select></label><label class="field">患者<select id="manual-patient" required></select></label><p class="notice" id="manual-followup-error"></p><div class="actions"><button type="button" id="manual-followup-cancel">取消</button><button class="primary" type="submit">开始填写</button></div></form></div>
+<script>(()=>{
+const q=s=>document.querySelector(s)
+const source=window.NURSE_PORTAL_SOURCE
+const nurseId=source.getCurrentNurseId()
+const isP2=new URLSearchParams(location.search).get('phase')==='p2'
+const pageId=isP2?'N12':'N02'
+if(isP2){document.title=' · P2 工作台';q('#activity-notices').classList.add('visible')}
+NursePortalShell.mountSidebar('.side',pageId)
+q('#today-label').textContent=isP2?'P2 · 活动申请与审批':'2026 年 9 月 9 日 · 星期三'
+
+function patientById(id){return source.get('patients').find(x=>x.id===id)}
+function patientName(id){const p=patientById(id);return p?p.name:'未知患者'}
+function planById(id){return source.get('plans').find(x=>x.id===id)}
+
+function copyPhone(phone,button){
+  const value=(phone||'').replace(/\s/g,'')
+  const copied=()=>{
+    button.textContent='已复制'
+    button.disabled=true
+    setTimeout(()=>{button.textContent='复制手机号';button.disabled=false},1600)
+  }
+  const fallback=()=>{
+    const input=document.createElement('textarea')
+    input.value=value
+    input.setAttribute('readonly','')
+    input.style.position='fixed'
+    input.style.opacity='0'
+    document.body.append(input)
+    input.select()
+    const success=document.execCommand('copy')
+    input.remove()
+    if(success)copied()
+    else button.textContent='复制失败'
+  }
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(value).then(copied).catch(fallback)
+  else fallback()
+}
+
+let current=null
+function renderTasks(){
+  const box=q('#task-list')
+  box.replaceChildren()
+  const tasks=source.get('tasks').filter(x=>x.nurseId===nurseId&&['due-today','overdue'].includes(x.status))
+  q('#task-pending').textContent=tasks.filter(task=>task.status==='due-today').length
+  q('#task-overdue').textContent=tasks.filter(task=>task.status==='overdue').length
+  if(isP2){const unread=window.ActivityApplication.get('activityNotifications').filter(note=>!note.read).length;q('#notice-count').textContent=unread;q('#notice-count').hidden=!unread}
+  if(isP2){const alerts=window.FollowupAlert.nurseAlerts(nurseId).filter(item=>item.status!=='closed');const highest=alerts.some(item=>item.level==='high')?'含高等级预警':alerts.some(item=>item.level==='medium')?'含中等级预警':'暂无未关闭预警';q('#alert-summary').classList.add('visible');q('#alert-count').textContent=alerts.length?'（'+alerts.length+'）':'';q('#alert-copy').textContent=alerts.length?highest:'当前负责患者暂无未关闭预警。'}
+  if(!tasks.length){
+    const empty=document.createElement('div');empty.className='empty';empty.textContent='今日任务已完成，暂无待办。'
+    box.append(empty);return
+  }
+  const groups=[
+    {status:'due-today',title:'今日待随访',copy:'以下任务需在今日完成随访。'},
+    {status:'overdue',title:'逾期任务',copy:'以下任务已逾期，请尽快完成补录。'}
+  ]
+  groups.forEach(group=>{
+    const rows=tasks.filter(task=>task.status===group.status)
+    if(!rows.length)return
+    const section=document.createElement('section');section.className='task-section'
+    const title=document.createElement('h2');title.textContent=group.title
+    const copy=document.createElement('p');copy.textContent=group.copy
+    const list=document.createElement('div');list.className='cards'
+    section.append(title,copy,list)
+    rows.forEach(task=>{
+    const plan=planById(task.planId)
+    const patient=patientById(task.patientId)
+    const card=document.createElement('article');card.className='task'
+    const content=document.createElement('div');content.className='content'
+    const tag=document.createElement('span');tag.className='tag '+(task.status==='overdue'?'danger':'warning')
+    tag.textContent=task.status==='overdue'?'已逾期':(task.status==='due-today'?'待执行 · 今日':'待执行')
+    const name=document.createElement('strong');name.textContent=(patient?patient.name:'未知患者')+' · '+(plan?plan.name:'')
+    const phoneLine=document.createElement('div');phoneLine.className='phone-line'
+    const phone=document.createElement('span');phone.textContent='手机号：'+(patient?patient.phone:'--')
+    const copyPhoneButton=document.createElement('button');copyPhoneButton.type='button';copyPhoneButton.className='copy-phone';copyPhoneButton.textContent='复制手机号'
+    copyPhoneButton.disabled=!patient
+    copyPhoneButton.onclick=()=>copyPhone(patient&&patient.phone,copyPhoneButton)
+    phoneLine.append(phone,copyPhoneButton)
+    const desc=document.createElement('p');desc.textContent='计划时间：'+task.scheduledDate
+    content.append(tag,name,phoneLine,desc)
+    const button=document.createElement('button');button.type='button'
+    button.className='start'+(task.status==='overdue'?' overdue':'')
+    button.textContent=task.status==='overdue'?'补录随访':'开始随访'
+    button.onclick=()=>openForm(task,plan)
+    card.append(content,button)
+    list.append(card)
+  })
+    box.append(section)
+  })
+}
+
+function boundPatients(){
+  const boundIds=source.get('bindings').filter(binding=>binding.nurseId===nurseId&&binding.status==='bound').map(binding=>binding.patientId)
+  return source.get('patients').filter(patient=>boundIds.includes(patient.id))
+}
+function renderManualFollowupOptions(){
+  const templates=source.get('templates').filter(template=>template.status==='active'&&(template.visibility==='public'||template.creatorId===nurseId))
+  const patients=boundPatients(),templateSelect=q('#manual-template'),patientSelect=q('#manual-patient')
+  templateSelect.replaceChildren();patientSelect.replaceChildren()
+  templates.forEach(template=>{const option=document.createElement('option');option.value=template.id;option.textContent=template.name;templateSelect.append(option)})
+  patients.forEach(patient=>{const option=document.createElement('option');option.value=patient.id;option.textContent=patient.name+' · '+patient.phone;patientSelect.append(option)})
+  q('#manual-followup-error').textContent=templates.length&&patients.length?'':'当前没有可用的模板或已绑定患者。'
+  q('#manual-followup-form button[type="submit"]').disabled=!templates.length||!patients.length
+}
+q('#manual-followup').onclick=()=>{renderManualFollowupOptions();q('#manual-followup-drawer').classList.add('open')}
+q('#activity-notices').onclick=()=>NursePortalShell.navigate('N11')
+q('#alert-link').onclick=()=>NursePortalShell.navigate('N13')
+q('#manual-followup-cancel').onclick=()=>q('#manual-followup-drawer').classList.remove('open')
+q('#manual-followup-form').onsubmit=e=>{
+  e.preventDefault()
+  const template=source.get('templates').find(item=>item.id===q('#manual-template').value)
+  const patient=patientById(q('#manual-patient').value)
+  if(!template||!patient){q('#manual-followup-error').textContent='请选择随访模板和患者。';return}
+  q('#manual-followup-drawer').classList.remove('open')
+  openForm({id:'manual-'+Date.now(),patientId:patient.id,planId:'',status:'manual'},{templateVersionSnapshot:{id:template.id,name:template.name,fields:template.fields}},true)
+}
+function updateFollowupHealth(patientId,values){
+  const health=source.getHealthRecord(patientId)
+  if(!health)return
+  const changes=health.changes||[];let changed=false
+  health.record.sections.forEach(section=>section.fields.forEach(field=>{const value=values[field.id];if(field.source==='follow-up'&&value&&field.value!==value){changes.push({id:'change-'+Date.now()+'-'+field.id,fieldId:field.id,operator:'nurse',updatedAt:'2026-09-09 刚刚',previousValue:field.value,currentValue:value});field.value=value;field.updatedAt='2026-09-09 刚刚';changed=true}}))
+  if(changed){health.record.updatedAt='2026-09-09 刚刚';health.changes=changes;source.setHealthRecord(patientId,health)}
+}
+
+function openForm(task,plan,manual=false){
+  current={task,plan,manual}
+  q('#form-title').textContent=manual?'记录随访':task.status==='overdue'?'补录随访内容':'填写随访内容'
+  q('#form-hint').textContent=manual?'本次随访不关联既有任务；提交后将更新健康档案并保留随访记录。':task.status==='overdue'?'补录后会保留原任务日期与本次提交时间。':'提交后将自动更新该患者健康档案，并保留本次随访记录。'
+  const fields=q('#form-fields')
+  const templateFields=(plan&&plan.templateVersionSnapshot&&plan.templateVersionSnapshot.fields)||[]
+  window.FollowupForm.renderFields(fields,templateFields,{fieldClass:'field'})
+  q('#form-error').textContent=''
+  q('#drawer').classList.add('open')
+}
+
+q('#cancel').onclick=()=>q('#drawer').classList.remove('open')
+q('#form').onsubmit=e=>{
+  e.preventDefault()
+  const {values,missing}=window.FollowupForm.collectValues(q('#form-fields'))
+  if(missing){q('#form-error').textContent='请完整填写必填项。';return}
+  if(!current.manual){
+    const tasks=source.get('tasks')
+    const task=tasks.find(x=>x.id===current.task.id)
+    if(task)task.status='done'
+    source.set('tasks',tasks)
+  }
+  const records=source.get('records')
+  const record={id:'record-'+Date.now(),taskId:current.manual?'':current.task.id,planId:current.task.planId,patientId:current.task.patientId,nurseId,templateId:current.manual?current.plan.templateVersionSnapshot.id:current.plan.templateId,templateName:current.manual?current.plan.templateVersionSnapshot.name:'',templateFields:current.plan.templateVersionSnapshot.fields,values,followupMethod:current.manual?'immediate':q('#form-method').value,submittedAt:new Date().toLocaleString('sv-SE').replace('T',' ').slice(0,16),submittedAtSort:new Date().toISOString()}
+  records.push(record)
+  source.set('records',records)
+  window.FollowupAlert.createForRecord(current.manual?current.plan.templateVersionSnapshot.id:current.plan.templateId,record)
+  updateFollowupHealth(current.task.patientId,values)
+  q('#drawer').classList.remove('open')
+  renderTasks()
+  parent.postMessage({type:'prototype:state-changed',pageId:pageId,scenarioId:'N02-S01'},'*')
+}
+
+renderTasks()
+parent.postMessage({type:'prototype:page-ready',pageId:pageId},'*')
+})()</script></body></html>
