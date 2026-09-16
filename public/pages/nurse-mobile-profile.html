@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="zh-CN">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <body>
+    <script src="/nurse-portal-source.js"></script>
+    <script src="/applicant-account.js"></script>
+    <script src="/nurse-portal-mobile-shell.js"></script>
+    <script>
+      ;(() => {
+        const content = NursePortalMobileShell.mountShell({ title: '我的', activeTab: 'NM06' })
+        const applicant = ApplicantAccount.current()
+        const style = document.createElement('style')
+        style.textContent = '.profile-card{padding:20px;background:#fff;border:1px solid #e2e8ec;border-radius:12px}.profile-avatar{display:flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:50%;background:#181d26;color:#fff;font-size:18px}.profile-card h2{margin:14px 0 4px;font-size:18px}.profile-card p{margin:0;color:#65717a;font-size:13px}.profile-row{display:flex;justify-content:space-between;gap:12px;margin-top:22px;padding-top:16px;border-top:1px solid #edf0f2;font-size:14px}.profile-row span{color:#65717a}.profile-link,.logout{width:100%;padding:12px;border-radius:8px;background:#fff;font:inherit;text-align:left}.profile-link{margin-top:16px;border:1px solid #d9e4f1;color:#1b61c9}.logout{margin-top:10px;border:1px solid #f0b5ae;color:#b42318}.agreement{position:fixed;z-index:20;inset:0;display:flex;flex-direction:column;background:#f8fafc}.agreement[hidden]{display:none}.agreement-head{display:flex;align-items:center;justify-content:space-between;padding:14px;background:#fff;border-bottom:1px solid #e2e8ec}.agreement-head h2{margin:0;font-size:17px}.agreement-head button{border:0;background:transparent;color:#1b61c9;font:inherit}.agreement-body{padding:18px 16px;overflow:auto;color:#41454d;font-size:14px;line-height:1.8}.agreement-body h3{color:#181d26;font-size:16px}'
+        document.head.append(style)
+        const card = document.createElement('section')
+        card.className = 'profile-card'
+        const avatar = document.createElement('div')
+        avatar.className = 'profile-avatar'
+        avatar.textContent = '申'
+        const title = document.createElement('h2')
+        title.textContent = '活动申请账户'
+        const hint = document.createElement('p')
+        hint.textContent = '用于提交和追踪活动申请'
+        const row = document.createElement('div')
+        row.className = 'profile-row'
+        const label = document.createElement('span')
+        label.textContent = '手机号'
+        const phone = document.createElement('strong')
+        phone.textContent = applicant.phone
+        row.append(label, phone)
+        const agreement = document.createElement('button')
+        agreement.type = 'button'
+        agreement.className = 'profile-link'
+        agreement.textContent = '查看账户服务协议'
+        const logout = document.createElement('button')
+        logout.type = 'button'
+        logout.className = 'logout'
+        logout.textContent = '退出登录'
+        logout.onclick = () => {
+          localStorage.removeItem('bjt-p2-applicant-session')
+          parent.postMessage({ type: 'prototype:navigation-request', pageId: 'NM01' }, '*')
+        }
+        card.append(avatar, title, hint, row, agreement, logout)
+        content.append(card)
+        const agreementPage = document.createElement('section')
+        agreementPage.className = 'agreement'
+        agreementPage.hidden = true
+        const agreementHead = document.createElement('header')
+        agreementHead.className = 'agreement-head'
+        const agreementTitle = document.createElement('h2')
+        agreementTitle.textContent = '账户服务协议'
+        const close = document.createElement('button')
+        close.type = 'button'
+        close.textContent = '关闭'
+        close.onclick = () => { agreementPage.hidden = true }
+        agreementHead.append(agreementTitle, close)
+        const agreementBody = document.createElement('article')
+        agreementBody.className = 'agreement-body'
+        const agreementHeading = document.createElement('h3')
+        agreementHeading.textContent = '活动申请账户服务协议'
+        const agreementText = document.createElement('p')
+        agreementText.textContent = '本原型用于展示活动申请账户的注册、登录、密码重置与申请追踪流程。账户信息仅保存在当前浏览器的演示数据中，不会发送至真实服务端。使用账户提交活动申请，即表示同意平台为审批处理目的展示本次申请内容。'
+        agreementBody.append(agreementHeading, agreementText)
+        agreementPage.append(agreementHead, agreementBody)
+        document.body.append(agreementPage)
+        agreement.onclick = () => { agreementPage.hidden = false }
+        parent.postMessage({ type: 'prototype:page-ready', pageId: 'NM06' }, '*')
+      })()
+    </script>
+  </body>
+</html>

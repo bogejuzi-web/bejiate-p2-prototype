@@ -1,0 +1,174 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title> · 患者详情</title>
+<script src="/nurse-portal-source.js"></script><script src="/followup-analysis.js"></script><script src="/nurse-portal-shell.js"></script>
+<link rel="stylesheet" href="/nurse-portal-layout.css">
+<style>
+.back{border:0;background:transparent;color:#1b61c9;font-size:14px;padding:0}
+.profile{display:flex;justify-content:space-between;align-items:center;margin:20px 0 24px;padding:24px;background:#fff;border:1px solid #dddddd;border-radius:10px}
+.profile-actions{display:flex;align-items:center;gap:10px}.profile-actions button{padding:9px 12px;border:1px solid #dddddd;border-radius:7px;background:#fff;color:#1b61c9;font-size:13px}
+.profile h1{margin:0;font-size:28px;font-weight:400}
+.profile p{margin:8px 0 0;color:#41454d}
+.panel{margin-top:22px;padding:28px;background:#fff;border:1px solid #dddddd;border-radius:10px}article.panel{width:100%;max-width:none}.inline-actions{display:flex;gap:10px;justify-content:flex-end}.inline-actions button{padding:10px 16px;border:1px solid #dddddd;border-radius:8px;background:#fff}.inline-actions .primary{border:0;background:#181d26;color:#fff}.health-form .item input{width:100%;height:40px;margin-top:8px;padding:0 10px;border:1px solid #dddddd;border-radius:6px}
+.panel h2{margin:0 0 20px;font-size:20px;font-weight:400}
+.health-sections{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.health-section{min-height:146px;padding:18px;border:1px solid #eef0f2;border-radius:8px;background:#f8fafc}.health-section h3{margin:0 0 16px;font-size:15px;font-weight:500}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 24px}.item span{display:block;color:#41454d;font-size:13px}.item strong{display:block;margin-top:8px;font-size:16px;font-weight:500}
+.panel-head{display:flex;justify-content:space-between;align-items:center}
+.history-item{padding:14px 0;border-bottom:1px solid #eef0f2}
+.history-item:last-child{border:0}
+.history-item strong{display:block;font-size:14px;font-weight:500}
+.history-item p{margin:6px 0 0;color:#41454d;font-size:13px}
+.health-form label{display:grid;gap:7px;color:#41454d;font-size:13px}
+ .consent-modal{position:fixed;inset:0;z-index:30;display:none;align-items:center;justify-content:center;padding:28px;background:rgba(24,29,38,.35)}.consent-modal.open{display:flex}.consent-dialog{width:min(720px,100%);max-height:min(720px,90vh);overflow:auto;padding:24px;border-radius:10px;background:#fff}.consent-dialog header{display:flex;align-items:center;justify-content:space-between;gap:14px}.consent-dialog h2{margin:0;font-size:20px;font-weight:400}.consent-dialog header button{border:0;background:transparent;color:#1b61c9;font-size:14px}.consent-tabs{display:flex;gap:8px;margin:20px 0 16px;overflow:auto}.consent-tabs button{flex:0 0 auto;padding:9px 12px;border:1px solid #dddddd;border-radius:7px;background:#fff;text-align:left}.consent-tabs button.active{border-color:#181d26;background:#f4f6f8}.consent-tabs small{display:block;margin-top:3px;color:#41454d}.consent-status{display:inline-block;margin:0 0 14px;padding:4px 8px;border-radius:999px;background:#e7f4f1;color:#006400;font-size:12px}.consent-status.unsigned{background:#fff3cc;color:#765a00}.consent-content{padding:18px;border:1px solid #eef0f2;border-radius:8px;background:#f8fafc;color:#333840;line-height:1.8;font-size:14px}.analysis-filter{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}.analysis-filter label{font-size:13px;color:#41454d}.analysis-filter input,.analysis-filter select{display:block;margin-top:5px;padding:8px;border:1px solid #ddd;border-radius:6px;background:#fff}.analysis-summary{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:14px 0}.analysis-summary div,.trend-card,.analysis-timeline article{padding:13px;border:1px solid #e4e8ec;border-radius:8px;background:#fff}.analysis-summary span,.trend-stats span,.analysis-timeline header span{display:block;color:#69717d;font-size:12px}.analysis-summary b{display:block;margin-top:7px;font-size:16px}.trend-stats{display:flex;gap:22px}.trend-stats b{display:block;margin-top:4px}.trend-card svg{display:block;width:100%;max-width:420px;height:150px;margin:8px 0}.trend-dates{display:flex;justify-content:space-between;color:#69717d;font-size:12px}.analysis-timeline{display:grid;gap:9px;margin-top:14px}.analysis-timeline article header{display:flex;justify-content:space-between;gap:10px}.analysis-timeline article p{margin:9px 0 0;font-size:13px;line-height:1.7}.analysis-timeline i{color:#b54708;font-style:normal}.analysis-empty{padding:20px;border:1px dashed #cbd5dc;border-radius:8px;color:#69717d;text-align:center}@media(max-width:800px){.health-sections,.grid,.analysis-summary{grid-template-columns:1fr 1fr}.profile{align-items:flex-start}.profile-actions{flex-wrap:wrap;justify-content:flex-end}}
+</style></head><body><main class="app"><aside class="side"></aside><section class="main" data-change-id="N04-C01">
+<button class="back" id="back">‹ 返回患者管理</button>
+<header class="profile"><div><h1 id="patient-name"></h1><p id="patient-meta"></p></div><div class="profile-actions"><button id="go-plans" type="button">随访计划</button><button id="go-analysis" type="button">随访分析</button><button id="view-consents" type="button">协议签署详情</button><span class="tag success" id="patient-tag">已绑定</span></div></header>
+<article class="panel" id="panel"></article>
+</section></main>
+<div class="drawer" id="edit-drawer"><form class="panel" id="edit-form"><h2>编辑健康档案</h2><p>可编辑字段以申请人权限为准；保存后将生成一条修改记录。</p><div id="edit-fields"></div><div class="actions"><button type="button" id="edit-cancel">取消</button><button class="primary" type="submit">保存</button></div></form></div>
+<div class="consent-modal" id="consent-modal"><section class="consent-dialog" role="dialog" aria-modal="true" aria-labelledby="consent-title"><header><h2 id="consent-title">协议签署详情</h2><button id="close-consents" type="button">关闭</button></header><div class="consent-tabs" id="consent-tabs"></div><div id="consent-detail"></div></section></div>
+<script>(()=>{
+const q=s=>document.querySelector(s)
+const source=window.NURSE_PORTAL_SOURCE
+const nurseId=source.getCurrentNurseId()
+NursePortalShell.mountSidebar('.side','N03')
+
+const patientId=source.getSelectedPatientId()||'patient-001'
+const patient=source.get('patients').find(p=>p.id===patientId)||source.get('patients')[0]
+const isAdminView=new URLSearchParams(location.search).get('adminMode')==='1'
+
+function patientBindingStatus(){
+  const binding=source.get('bindings').find(b=>b.patientId===patient.id&&b.status==='bound')
+  return binding
+}
+
+function renderProfile(){
+  q('#patient-name').textContent=patient.name
+  q('#patient-meta').textContent=patient.phone+' · 患者编号 '+patient.patientNo
+  const binding=patientBindingStatus()
+  q('#go-analysis').hidden=!isAdminView&&(!binding||binding.nurseId!==nurseId)
+  const tag=q('#patient-tag')
+  if(binding){tag.className='tag success';tag.textContent='已绑定'}
+  else{tag.className='tag muted';tag.textContent='未绑定'}
+}
+
+function fieldValue(field){return field.value===undefined?'':field.value}
+let editingHealth=false
+
+function renderHealth(){
+  const panel=q('#panel')
+  const health=source.getHealthRecord(patient.id)
+  if(!health){
+    panel.innerHTML='<h2>健康档案</h2><div class="empty">该患者暂无健康档案。</div>'
+    return
+  }
+  let html='<div class="panel-head"><h2>健康档案</h2>'+(editingHealth?'<div class="inline-actions"><button id="cancel-health">取消</button><button class="primary" id="save-health">保存</button></div>':'<button class="secondary" id="edit-health">编辑健康档案</button>')+'</div>'
+  html+='<p style="color:#41454d;font-size:13px;margin:-8px 0 20px">最近更新：'+health.record.updatedAt+'</p>'
+  html+='<div class="health-sections">'
+  health.record.sections.forEach(section=>{
+    html+='<section class="health-section"><h3>'+section.title+'</h3><div class="grid">'
+    section.fields.forEach(field=>{
+      html+='<div class="item"><span>'+field.label+'</span>'+(editingHealth&&field.nurseEditable!==false?'<input data-field-id="'+field.id+'" value="'+fieldValue(field)+'">':'<strong>'+fieldValue(field)+'</strong>')+'</div>'
+    })
+    html+='</div></section>'
+  })
+  html+='</div>'
+  panel.innerHTML=html
+  if(editingHealth){q('#cancel-health').onclick=()=>{editingHealth=false;renderHealth()};q('#save-health').onclick=saveInlineHealth}
+  else{q('#edit-health').onclick=openEditForm}
+}
+
+function openEditForm(){editingHealth=true;renderHealth()}
+function saveInlineHealth(){
+  const health=source.getHealthRecord(patient.id);if(!health)return
+  const changes=health.changes||[]
+  q('#panel').querySelectorAll('[data-field-id]').forEach(input=>{for(const section of health.record.sections){const field=section.fields.find(f=>f.id===input.dataset.fieldId);if(field&&field.value!==input.value){changes.push({id:'change-'+Date.now()+'-'+field.id,fieldId:field.id,operator:'nurse',updatedAt:'2026-09-09 刚刚',previousValue:field.value,currentValue:input.value});field.value=input.value;field.updatedAt='2026-09-09 刚刚'}}})
+  health.record.updatedAt='2026-09-09 刚刚';health.changes=changes;source.setHealthRecord(patient.id,health);editingHealth=false;renderHealth()
+}
+q('#edit-cancel').onclick=()=>q('#edit-drawer').classList.remove('open')
+q('#edit-form').onsubmit=e=>{
+  e.preventDefault()
+  const health=source.getHealthRecord(patient.id)
+  if(!health)return
+  const inputs=Array.from(q('#edit-fields').querySelectorAll('input'))
+  const changes=health.changes||[]
+  inputs.forEach(input=>{
+    const fieldId=input.dataset.fieldId
+    for(const section of health.record.sections){
+      const field=section.fields.find(f=>f.id===fieldId)
+      if(field&&field.value!==input.value){
+        changes.push({id:'change-'+Date.now()+'-'+fieldId,fieldId,operator:'nurse',updatedAt:'2026-09-09 刚刚',previousValue:field.value,currentValue:input.value})
+        field.value=input.value
+        field.updatedAt='2026-09-09 刚刚'
+      }
+    }
+  })
+  health.record.updatedAt='2026-09-09 刚刚'
+  health.changes=changes
+  source.setHealthRecord(patient.id,health)
+  q('#edit-drawer').classList.remove('open')
+  renderHealth()
+}
+
+function renderPlans(){
+  const panel=q('#panel')
+  const plans=source.get('plans').filter(p=>p.patientId===patient.id)
+  let html='<h2>随访计划</h2>'
+  if(!plans.length){
+    html+='<div class="empty">该患者暂无随访计划。</div>'
+  }else{
+    const statusTag={draft:['tag muted','草稿'],active:['tag success','生效中'],ended:['tag muted','已结束'],cancelled:['tag danger','已取消']}
+    html+='<div class="cards">'+plans.map(plan=>{
+      const [cls,text]=statusTag[plan.status]||['tag muted',plan.status]
+      return '<article class="card"><div style="display:flex;justify-content:space-between;gap:12px"><strong>'+plan.name+'</strong><i class="'+cls+'">'+text+'</i></div><p>模板：<button class="text-btn" data-template="'+plan.templateId+'">'+plan.templateVersionSnapshot.name+'</button></p></article>'
+    }).join('')+'</div>'
+  }
+  panel.innerHTML=html
+  panel.querySelectorAll('[data-template]').forEach(btn=>btn.addEventListener('click',()=>parent.postMessage({type:'prototype:navigation-request',pageId:'N06'},'*')))
+}
+
+function renderRecords(){
+  const panel=q('#panel')
+  const records=source.get('records').filter(r=>r.patientId===patient.id)
+  let html='<h2>随访记录</h2>'
+  if(!records.length){
+    html+='<div class="empty">该患者暂无随访记录。</div>'
+  }else{
+    const nurses=source.get('nurses')
+    const nurseName=id=>{const n=nurses.find(x=>x.id===id);return n?n.name:'未知申请人'}
+    const templates=source.get('templates')
+    const fieldLabel=(record,fieldId)=>{
+      const plan=source.get('plans').find(p=>p.id===record.planId)
+      const fields=(plan&&plan.templateVersionSnapshot&&plan.templateVersionSnapshot.fields)||record.templateFields||[]
+      const found=fields.find(f=>f.id===fieldId)
+      return found?found.label:fieldId
+    }
+    html+='<div class="cards">'+records.map(record=>{
+      const values=Object.keys(record.values).map(k=>fieldLabel(record,k)+'：'+record.values[k]).join(' · ')
+      return '<article class="card"><strong>'+record.submittedAt+' · '+nurseName(record.nurseId)+(record.templateName?' · '+record.templateName:'')+'</strong><p>'+values+'</p></article>'
+    }).join('')+'</div>'
+  }
+  panel.innerHTML=html
+}
+
+function renderAnalysis(){
+  const panel=q('#panel'), now='2026-09-16', params=new URLSearchParams(location.search)
+  const filters={start:params.get('start')||'',end:params.get('end')||now,templateId:params.get('template')||'',nurseId:params.get('nurse')||''}
+  const draw=()=>{
+    const result=window.FollowupAnalysis.analyze(patient.id,filters)
+    panel.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><h2>随访记录分析</h2><button class="text-btn" id="back-records">返回记录</button></div><div class="analysis-filter"><label>开始日期<input id="analysis-start" type="date" value="'+filters.start+'"></label><label>结束日期<input id="analysis-end" type="date" value="'+filters.end+'"></label><label>随访模板<select id="analysis-template"><option value="">全部模板</option>'+source.get('templates').map(t=>'<option value="'+t.id+'" '+(filters.templateId===t.id?'selected':'')+'>'+t.name+'</option>').join('')+'</select></label><label>分析指标<select id="analysis-indicator"><option value="">请选择指标</option>'+result.indicators.map(i=>'<option value="'+i.key+'">'+i.label+(i.unit?'（'+i.unit+'）':'')+'</option>').join('')+'</select></label></div>'+window.FollowupAnalysis.overview(result.overview)+'<section id="trend-area" style="margin-top:18px"><div class="analysis-empty">请选择数值或百分数指标查看趋势。</div></section><h3 style="margin:24px 0 10px">随访内容时间轴</h3>'+window.FollowupAnalysis.timeline(result.timeline)
+    q('#back-records').onclick=renderRecords
+    ;['analysis-start','analysis-end','analysis-template'].forEach(id=>q('#'+id).onchange=()=>{filters.start=q('#analysis-start').value;filters.end=q('#analysis-end').value;filters.templateId=q('#analysis-template').value;draw()})
+    q('#analysis-indicator').onchange=()=>{const item=result.indicators.find(i=>i.key===q('#analysis-indicator').value);q('#trend-area').innerHTML=item?window.FollowupAnalysis.chart(item):'<div class="analysis-empty">请选择数值或百分数指标查看趋势。</div>'}
+  }
+  draw()
+}
+
+q('#back').onclick=()=>parent.postMessage({type:'prototype:navigation-request',pageId:'N03'},'*')
+q('#go-plans').onclick=()=>{source.setSelectedPatientId(patient.id);parent.postMessage({type:'prototype:navigation-request',pageId:'N05'},'*')}
+q('#go-analysis').onclick=renderAnalysis
+function renderConsents(){const rows=source.get('consents').filter(x=>x.patientId===patient.id);const tabs=q('#consent-tabs'),detail=q('#consent-detail');tabs.replaceChildren();if(!rows.length){detail.innerHTML='<div class="empty">该患者暂无协议记录。</div>';return}let selected=rows[0];const draw=()=>{detail.innerHTML='<i class="consent-status '+(selected.status==='signed'?'':'unsigned')+'">'+(selected.status==='signed'?'已签署 · '+selected.signedAt:'待签署')+'</i><div class="consent-content">'+selected.content+'</div>';tabs.querySelectorAll('button').forEach(btn=>btn.classList.toggle('active',btn.dataset.id===selected.id))};rows.forEach(row=>{const btn=document.createElement('button');btn.type='button';btn.dataset.id=row.id;btn.innerHTML='<strong>'+row.title+' '+row.version+'</strong><small>'+(row.status==='signed'?'已签署':'待签署')+'</small>';btn.onclick=()=>{selected=row;draw()};tabs.append(btn)});draw()}
+q('#view-consents').onclick=()=>{renderConsents();q('#consent-modal').classList.add('open')};q('#close-consents').onclick=()=>q('#consent-modal').classList.remove('open');q('#consent-modal').onclick=e=>{if(e.target===q('#consent-modal'))q('#consent-modal').classList.remove('open')}
+
+renderProfile()
+renderHealth()
+if(new URLSearchParams(location.search).get('analysis')==='1')renderAnalysis()
+parent.postMessage({type:'prototype:page-ready',pageId:'N04'},'*')
+})()</script></body></html>

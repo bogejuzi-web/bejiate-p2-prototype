@@ -1,0 +1,128 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title> · 患者管理</title>
+<script src="/nurse-portal-source.js"></script><script src="/nurse-portal-shell.js"></script>
+<link rel="stylesheet" href="/nurse-portal-layout.css">
+<style>
+.tools{display:flex;gap:12px;margin:24px 0}
+.tools input{width:320px;height:44px;padding:0 13px;border:1px solid #dddddd;border-radius:6px;background:#fff}
+.patient-row{grid-template-columns:1.2fr 1.05fr .9fr 1fr 1.6fr}
+.patient-row .name strong{display:block;font-weight:500}
+.patient-row .name span{color:#41454d;font-size:12px}
+.patient-row .ops{display:flex;gap:14px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+.patient-row .ops .disabled-note{color:#41454d;font-size:12px}
+</style></head><body><main class="app"><aside class="side"></aside><section class="main" data-change-id="N03-C01"><header class="top"><h1>患者管理</h1><button class="primary" id="add">新增患者</button></header>
+<div class="tools"><input id="search" placeholder="搜索患者姓名或手机号"></div>
+<section class="table"><div class="row head patient-row"><span>患者</span><span>手机号</span><span>知情同意</span><span>绑定状态</span><span>操作</span></div><div id="list"></div></section>
+</section></main>
+<div class="drawer" id="drawer"><form class="panel" id="form"><h2>新增患者</h2><p>输入患者手机号。系统识别到已签署知情同意的患者后，将发起绑定申请，等待患者确认。</p><label class="field"><span>患者手机号</span><input id="phone" placeholder="请输入手机号" required></label><p class="notice" id="form-error"></p><div class="actions"><button type="button" id="cancel">取消</button><button class="primary" type="submit">发起绑定申请</button></div></form></div>
+<div class="dialog" id="confirm"><section class="panel"><h2 id="confirm-title">确认操作</h2><p id="confirm-copy"></p><div class="actions"><button type="button" id="confirm-cancel">取消</button><button class="primary" id="confirm-ok">确认</button></div></section></div>
+<script>(()=>{
+const q=s=>document.querySelector(s)
+const source=window.NURSE_PORTAL_SOURCE
+const nurseId=source.getCurrentNurseId()
+NursePortalShell.mountSidebar('.side','N03')
+
+let pending=null
+function ask(title,copy,action){q('#confirm-title').textContent=title;q('#confirm-copy').textContent=copy;pending=action;q('#confirm').classList.add('open')}
+
+function boundToOtherNurse(patientId){
+  return source.get('bindings').find(b=>b.patientId===patientId&&b.status==='bound'&&b.nurseId!==nurseId)
+}
+
+function myBindingFor(patientId){
+  const mine=source.get('bindings').filter(b=>b.patientId===patientId&&b.nurseId===nurseId).sort((a,b)=>(b.requestedAt||'').localeCompare(a.requestedAt||''))[0]
+  return mine?{status:mine.status,binding:mine}:{status:'none',binding:null}
+}
+
+function statusTag(status){
+  if(status==='bound')return['tag success','已绑定']
+  if(status==='pending')return['tag warning','待患者确认']
+  if(status==='rejected')return['tag danger','已拒绝']
+  return['tag muted','未绑定']
+}
+
+function render(){
+  const list=q('#list')
+  list.replaceChildren()
+  const keyword=q('#search').value.trim()
+  const patients=source.get('patients')
+  const relevant=patients.filter(p=>myBindingFor(p.id).status!=='none')
+  const filtered=relevant.filter(p=>!keyword||(p.name+p.phone).includes(keyword))
+  if(!relevant.length){
+    const empty=document.createElement('div');empty.className='empty';empty.textContent='暂无患者，点击右上角"新增患者"发起第一条绑定申请。'
+    list.append(empty);return
+  }
+  if(!filtered.length){
+    const empty=document.createElement('div');empty.className='empty';empty.textContent='未找到符合条件的患者。'
+    list.append(empty);return
+  }
+  filtered.forEach(patient=>{
+    const info=myBindingFor(patient.id)
+    const row=document.createElement('div')
+    row.className='row patient-row'
+    const [tagClass,tagText]=statusTag(info.status)
+    row.innerHTML=`<span class="name"><strong>${patient.name}</strong><span>患者编号 ${patient.patientNo}</span></span><span>${patient.phone}</span><span>${patient.consentSigned?'已签署':'未签署'}</span><span><i class="${tagClass}">${tagText}</i></span>`
+    const ops=document.createElement('span');ops.className='ops ops-cell'
+    const view=document.createElement('button');view.type='button';view.className='text-btn';view.textContent='查看'
+    view.onclick=()=>{source.setSelectedPatientId(patient.id);parent.postMessage({type:'prototype:navigation-request',pageId:'N04'},'*')}
+    ops.append(view)
+    if(info.status==='bound'){
+      const unbind=document.createElement('button');unbind.type='button';unbind.className='text-btn danger';unbind.textContent='解绑'
+      unbind.onclick=()=>ask('确认解绑该患者？','解绑后原申请人立即失去访问权限；该患者名下未完成的随访任务将被取消。',()=>{
+        const bindings=source.get('bindings')
+        const target=bindings.find(b=>b.id===info.binding.id)
+        if(target)target.status='unbound'
+        source.set('bindings',bindings)
+        const tasks=source.get('tasks')
+        tasks.filter(t=>t.patientId===patient.id&&t.nurseId===nurseId&&['pending','due-today','overdue'].includes(t.status)).forEach(t=>{t.status='cancelled';t.cancelReason='申请人解绑患者'})
+        source.set('tasks',tasks)
+        render()
+      })
+      ops.append(unbind)
+    }else if(info.status==='pending'){
+      const cancel=document.createElement('button');cancel.type='button';cancel.className='text-btn danger';cancel.textContent='撤销申请'
+      cancel.onclick=()=>{
+        const bindings=source.get('bindings').filter(b=>b.id!==info.binding.id)
+        source.set('bindings',bindings)
+        render()
+      }
+      ops.append(cancel)
+    }else if(info.status==='rejected'){
+      const reapply=document.createElement('button');reapply.type='button';reapply.className='text-btn';reapply.textContent='重新申请'
+      reapply.onclick=()=>{
+        const bindings=source.get('bindings')
+        bindings.push({id:'bind-'+Date.now(),patientId:patient.id,nurseId,status:'pending',requestedAt:'2026-09-09 刚刚'})
+        source.set('bindings',bindings)
+        render()
+      }
+      ops.append(reapply)
+    }
+    row.append(ops)
+    list.append(row)
+  })
+}
+
+q('#search').oninput=render
+q('#add').onclick=()=>{q('#phone').value='';q('#form-error').textContent='';q('#drawer').classList.add('open')}
+q('#cancel').onclick=()=>q('#drawer').classList.remove('open')
+q('#form').onsubmit=e=>{
+  e.preventDefault()
+  const phone=q('#phone').value.trim()
+  if(!phone){q('#form-error').textContent='请输入患者手机号。';return}
+  const patient=source.get('patients').find(p=>p.phone.replace(/\s/g,'')===phone.replace(/\s/g,''))
+  if(!patient){q('#form-error').textContent='未找到该手机号对应的患者。';return}
+  if(!patient.consentSigned){q('#form-error').textContent='该患者尚未签署知情同意，暂不能发起绑定申请。';return}
+  if(boundToOtherNurse(patient.id)){q('#form-error').textContent='该患者已绑定其他申请人，无法发起申请。';return}
+  const info=myBindingFor(patient.id)
+  if(info.status==='bound'||info.status==='pending'){q('#form-error').textContent='该患者已存在绑定关系或待确认申请。';return}
+  const bindings=source.get('bindings')
+  bindings.push({id:'bind-'+Date.now(),patientId:patient.id,nurseId,status:'pending',requestedAt:'2026-09-09 刚刚'})
+  source.set('bindings',bindings)
+  q('#drawer').classList.remove('open')
+  render()
+}
+q('#confirm-cancel').onclick=()=>q('#confirm').classList.remove('open')
+q('#confirm-ok').onclick=()=>{q('#confirm').classList.remove('open');pending&&pending();pending=null}
+
+render()
+parent.postMessage({type:'prototype:page-ready',pageId:'N03'},'*')
+})()</script></body></html>

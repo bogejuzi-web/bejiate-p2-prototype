@@ -1,0 +1,550 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title> · 活动申请表单</title>
+<script src="/nurse-portal-source.js"></script><script src="/admin-portal-shell.js"></script>
+<link rel="stylesheet" href="/nurse-portal-layout.css">
+<style>
+.builder{display:grid;grid-template-columns:240px minmax(0,1fr) 300px;gap:0;margin-top:20px;border:1px solid #dddddd;border-radius:10px;background:#fff;min-height:560px}
+.builder-col{padding:24px}
+.builder-col+.builder-col{border-left:1px solid #eef0f2}
+.builder h3{margin:0 0 14px;font-size:15px;font-weight:500}
+.field-type-btn{display:block;width:100%;margin-bottom:6px;padding:10px;border:1px solid #dddddd;border-radius:6px;background:#fff;text-align:left;font-size:13px}
+.field-type-btn:hover{border-color:#9297a0}
+/* ---------- 中间：表单预览 ---------- */
+#field-list{display:flex;flex-direction:column;gap:2px}
+.pv-field{position:relative;padding:14px 16px;border:1px solid transparent;border-radius:8px;cursor:pointer}
+.pv-field:hover{background:#f8fafc}
+.pv-field.selected{border-color:#c9d3f0;background:#f4f6fb}
+.pv-field.dragging{opacity:.35}
+.pv-label{display:block;margin:0 0 8px;font-size:14px;color:#181d26}
+.pv-label .pv-req{color:#aa2d00;margin-right:2px}
+.pv-input{width:100%;height:40px;padding:0 12px;border:1px solid #dddddd;border-radius:6px;background:#fff;color:#181d26;font:inherit;pointer-events:none}
+.pv-select{position:relative}
+.pv-select select{width:100%;height:40px;padding:0 32px 0 12px;border:1px solid #dddddd;border-radius:6px;background:#fff;color:#9297a0;font:inherit;appearance:none;pointer-events:none}
+.pv-select svg{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:#9297a0}
+.pv-choices{display:flex;flex-wrap:wrap;gap:18px}
+.pv-choice{display:flex;align-items:center;gap:8px;color:#181d26;font-size:14px}
+.pv-choice .pv-box{width:16px;height:16px;border:1px solid #9297a0;border-radius:9999px;flex:0 0 auto}
+.pv-choice .pv-box.multi{border-radius:3px}
+.pv-percent{position:relative}
+.pv-percent .pv-input{padding-right:32px}
+.pv-percent span{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:#41454d;font-size:14px}
+.pv-date{display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;border:1px solid #dddddd;border-radius:6px;color:#9297a0;background:#fff}
+.pv-file{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 16px;border:1px solid #dddddd;border-radius:6px;color:#41454d;background:#fff;font-size:14px}
+.pv-empty{color:#9297a0;font-size:13px;padding:40px 0;text-align:center}
+/* 悬浮操作条 */
+.pv-move{position:absolute;left:50%;transform:translateX(-50%);z-index:3;display:flex;align-items:center;justify-content:center;width:30px;height:30px;border:1px solid #dddddd;border-radius:9999px;background:#fff;color:#41454d;box-shadow:0 1px 4px rgba(24,29,38,.12);cursor:pointer;padding:0}
+.pv-move:hover{color:#181d26;border-color:#9297a0}
+.pv-move:disabled{opacity:.35;cursor:not-allowed}
+.pv-move-up{top:-15px}
+.pv-move-down{bottom:-15px}
+.pv-ops{position:absolute;right:12px;bottom:-15px;z-index:3;display:flex;gap:8px}
+.pv-ops button{display:flex;align-items:center;justify-content:center;width:30px;height:30px;border:1px solid #dddddd;border-radius:9999px;background:#fff;color:#41454d;box-shadow:0 1px 4px rgba(24,29,38,.12);cursor:pointer;padding:0}
+.pv-ops button:hover{color:#181d26;border-color:#9297a0}
+.toolbar-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}
+.toast-save{position:fixed;right:32px;bottom:28px;padding:11px 16px;background:#181d26;color:#fff;border-radius:8px;z-index:99}
+.meta-fields label{display:block;margin:12px 0}
+.status-pill{display:inline-flex;align-items:center;gap:6px;margin-left:10px;padding:4px 10px;border-radius:999px;font-size:12px;vertical-align:middle}
+.status-pill.on{background:#e7f4f1;color:#006400}
+.status-pill.off{background:#f4f6f8;color:#41454d}
+
+/* ---------- 字段设置面板（右列） ---------- */
+.fs-title{margin:0 0 18px;font-size:16px;font-weight:500;color:#181d26}
+.fs-block{padding:16px 0}
+.fs-block:first-of-type{padding-top:0}
+.fs-block+.fs-block{border-top:1px solid #eef0f2}
+.fs-label{display:flex;align-items:center;gap:4px;margin:0 0 8px;font-size:14px;color:#181d26}
+.fs-hint{margin-top:8px;color:#9297a0;font-size:12px;line-height:1.5}
+.fs-hint .fs-ast{color:#aa2d00}
+.fs-input,.fs-textarea{width:100%;padding:0 12px;border:1px solid #dddddd;border-radius:6px;background:#fff;color:#181d26;font:inherit}
+.fs-input{height:40px}
+.fs-textarea{height:78px;padding:10px 12px;resize:vertical}
+.fs-select-wrap{position:relative}
+.fs-select-wrap select{width:100%;height:40px;padding:0 32px 0 12px;border:1px solid #dddddd;border-radius:6px;background:#fff;color:#181d26;font:inherit;appearance:none}
+.fs-select-wrap select:disabled{background:#f8fafc;color:#9297a0}
+.fs-select-wrap svg{position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none;color:#9297a0}
+.fs-logic-btn{display:block;width:100%;padding:12px;border:1px solid #dddddd;border-radius:6px;background:#f4f6f8;color:#181d26;font-size:14px;text-align:center}
+.fs-decimal-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:6px 0}
+.fs-decimal-row label{display:flex;align-items:center;gap:6px;font-size:14px;color:#181d26}
+.fs-decimal-row input[type=checkbox]{width:16px;height:16px}
+.fs-decimal-select{width:64px;height:34px;border:1px solid #dddddd;border-radius:6px;padding:0 8px;font:inherit}
+.fs-help{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:9999px;background:#e0e2e6;color:#41454d;font-size:10px;line-height:1;cursor:help}
+.fs-toggle-group{padding:16px 0 0;border-top:1px solid #eef0f2}
+.fs-checkbox-row{display:flex;align-items:center;gap:10px;padding:12px 0}
+.fs-checkbox-row+.fs-checkbox-row{border-top:1px solid #eef0f2}
+.fs-checkbox-row input{width:16px;height:16px;flex:0 0 auto}
+.fs-checkbox-row span{font-size:14px;color:#181d26}
+.fs-option-row{display:flex;align-items:center;gap:10px;padding:9px 10px;border:1px solid #dddddd;border-radius:6px;margin-bottom:8px;background:#fff}
+.fs-option-row input{flex:1;border:0;padding:0;font:inherit;color:#181d26;height:22px}
+.fs-option-row input:focus{outline:none}
+.fs-option-row.dragging{opacity:.4}
+.fs-option-icons{display:flex;align-items:center;gap:8px;color:#9297a0;flex:0 0 auto}
+.fs-option-icons button{display:flex;align-items:center;border:0;background:transparent;color:inherit;padding:2px;cursor:pointer}
+.fs-option-icons button:hover{color:#41454d}
+.fs-option-icons button:disabled{opacity:.4;cursor:not-allowed}
+.fs-drag-handle{cursor:grab}
+.fs-add-option{display:block;width:100%;padding:10px;border:1px dashed #dddddd;border-radius:6px;background:#fff;color:#41454d;font-size:13px}
+.fs-empty-hint{color:#41454d;font-size:13px}
+</style></head><body><main class="app"><aside class="side"></aside><section class="main" data-change-id="A11-C01">
+<header class="top"><div><p class="eyebrow" id="mode-label">活动申请表单</p><h1>字段配置<span class="status-pill" id="status-pill"></span></h1></div><div class="toolbar-actions"><button type="button" class="secondary" id="cancel-btn">取消</button><button type="button" class="primary" id="save-btn">保存表单</button></div></header>
+
+<div class="meta-fields" style="margin-top:20px">
+<label>表单名称<input id="form-name" placeholder="请输入表单名称"></label>
+</div>
+
+<div class="builder">
+<div class="builder-col">
+<h3>添加字段</h3>
+<button type="button" class="field-type-btn" data-type="text">填空</button>
+<button type="button" class="field-type-btn" data-type="option">单选</button>
+<button type="button" class="field-type-btn" data-type="multi-option">多选</button>
+<button type="button" class="field-type-btn" data-type="number">数值</button>
+<button type="button" class="field-type-btn" data-type="percentage">百分数</button>
+<button type="button" class="field-type-btn" data-type="date">日期</button>
+<button type="button" class="field-type-btn" data-type="image">图片</button>
+</div>
+<div class="builder-col">
+<h3>表单预览</h3>
+<div id="field-list"></div>
+</div>
+<div class="builder-col">
+<h3>字段设置</h3>
+<div id="field-settings"><p class="fs-empty-hint">选择左侧字段类型新增，或点击中间预览中的字段进行编辑。</p></div>
+</div>
+</div>
+
+</section></main>
+
+<div class="dialog" id="confirm"><section class="panel"><h2 id="confirm-title">确认操作</h2><p id="confirm-copy"></p><div class="actions"><button type="button" id="confirm-cancel">取消</button><button class="primary" id="confirm-ok">确认</button></div></section></div>
+
+<script>(()=>{
+const q=s=>document.querySelector(s)
+const source=window.NURSE_PORTAL_SOURCE
+AdminPortalShell.mountSidebar('.side','A11')
+
+const typeLabels={text:'填空',option:'单选','multi-option':'多选',number:'数值',percentage:'百分数',date:'日期',image:'图片'}
+
+let pending=null
+function ask(title,copy,action){q('#confirm-title').textContent=title;q('#confirm-copy').textContent=copy;pending=action;q('#confirm').classList.add('open')}
+q('#confirm-cancel').onclick=()=>q('#confirm').classList.remove('open')
+q('#confirm-ok').onclick=()=>{q('#confirm').classList.remove('open');pending&&pending();pending=null}
+
+/* 只维护唯一一份活动申请表单：取已有第一条，没有则初始化一份空表单 */
+function loadForm(){
+  const rows=source.get('activityForms')
+  const existing=rows[0]
+  return existing?JSON.parse(JSON.stringify(existing)):{id:'activity-form-'+Date.now(),name:'活动申请表单',status:'disabled',updatedAt:'2026-09-09 刚刚',fields:[]}
+}
+
+let form=loadForm()
+let fields=form.fields
+let selectedFieldIndex=fields.length?0:-1
+
+q('#form-name').value=form.name
+
+function renderStatus(){
+  const isPublished=form.status==='published'
+  q('#status-pill').textContent=isPublished?'已发布':'已停用'
+  q('#status-pill').className='status-pill '+(isPublished?'on':'off')
+}
+
+const ICON_UP='<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 11V3M3.5 6.5L7 3L10.5 6.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+const ICON_DOWN='<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 3V11M3.5 7.5L7 11L10.5 7.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+const ICON_COPY='<svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="2" y="4" width="7" height="8" rx="1.2" stroke="currentColor" stroke-width="1.2"/><path d="M5 4V3a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-1" stroke="currentColor" stroke-width="1.2"/></svg>'
+const ICON_DEL='<svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M2.5 4H12.5M6 4V2.8h3V4M3.6 4L4.1 12.2h6.8L11.4 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+const ICON_CHEVRON='<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+const ICON_CAL='<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1.5" y="2.5" width="11" height="10" rx="1.5" stroke="currentColor" stroke-width="1.2"/><path d="M1.5 5.5H12.5" stroke="currentColor" stroke-width="1.2"/><path d="M4 1V3.5M10 1V3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>'
+
+/* 渲染单个字段在表单中的真实控件预览 */
+function renderPreviewControl(field){
+  const wrap=document.createElement('div')
+  if(field.type==='text'){
+    const input=document.createElement('div');input.className='pv-input'
+    if(field.defaultValue)input.textContent=field.defaultValue
+    wrap.append(input)
+  }else if(field.type==='number'){
+    const input=document.createElement('div');input.className='pv-input'
+    if(field.defaultValue)input.textContent=field.defaultValue
+    wrap.append(input)
+  }else if(field.type==='percentage'){
+    const box=document.createElement('div');box.className='pv-percent'
+    const input=document.createElement('div');input.className='pv-input'
+    if(field.defaultValue)input.textContent=field.defaultValue
+    const suffix=document.createElement('span');suffix.textContent='%'
+    box.append(input,suffix)
+    wrap.append(box)
+  }else if(field.type==='date'){
+    const d=document.createElement('div');d.className='pv-date';d.innerHTML=ICON_CAL+'<span>'+(field.defaultValue||'请选择')+'</span>'
+    wrap.append(d)
+  }else if(field.type==='option'){
+    const opts=field.options||['选1','选2','选3']
+    if(field.displayMode==='flat'){
+      const group=document.createElement('div');group.className='pv-choices'
+      opts.forEach(o=>{
+        const c=document.createElement('label');c.className='pv-choice'
+        const b=document.createElement('span');b.className='pv-box'
+        c.append(b,document.createTextNode(o));group.append(c)
+      })
+      wrap.append(group)
+    }else{
+      const sel=document.createElement('div');sel.className='pv-select'
+      const s=document.createElement('select');s.disabled=true
+      const op=document.createElement('option');op.textContent=field.defaultValue||'请选择';s.append(op)
+      opts.forEach(o=>{const opt=document.createElement('option');opt.textContent=o;s.append(opt)})
+      const arrow=document.createElement('span');arrow.innerHTML=ICON_CHEVRON;arrow.style.cssText='position:absolute;right:12px;top:50%;transform:translateY(-50%);color:#9297a0'
+      sel.append(s,arrow)
+      wrap.append(sel)
+    }
+  }else if(field.type==='multi-option'){
+    const opts=field.options||['选1','选2','选3']
+    const group=document.createElement('div');group.className='pv-choices'
+    opts.forEach(o=>{
+      const c=document.createElement('label');c.className='pv-choice'
+      const b=document.createElement('span');b.className='pv-box multi'
+      c.append(b,document.createTextNode(o));group.append(c)
+    })
+    wrap.append(group)
+  }else if(field.type==='image'){
+    const b=document.createElement('div');b.className='pv-file';b.textContent='请选择图片'
+    wrap.append(b)
+  }
+  return wrap
+}
+
+function renderFieldList(){
+  const box=q('#field-list')
+  box.replaceChildren()
+  if(!fields.length){
+    box.innerHTML='<p class="pv-empty">从左侧选择字段类型，添加后将在此处预览表单填写效果。</p>'
+    q('#field-settings').innerHTML='<p class="fs-empty-hint">选择左侧字段类型新增，或点击中间预览中的字段进行编辑。</p>'
+    return
+  }
+  fields.forEach((field,index)=>{
+    const item=document.createElement('div')
+    item.className='pv-field'+(index===selectedFieldIndex?' selected':'')
+    item.draggable=true
+    item.onclick=()=>{selectedFieldIndex=index;renderFieldList()}
+
+    const label=document.createElement('p');label.className='pv-label'
+    if(field.required){const req=document.createElement('span');req.className='pv-req';req.textContent='*';label.append(req)}
+    label.append(document.createTextNode(field.label||'（未命名字段）'))
+    const control=renderPreviewControl(field)
+    control.classList.add('pv-field-control')
+    item.append(label,control)
+
+    if(index===selectedFieldIndex){
+      const up=document.createElement('button');up.type='button';up.className='pv-move pv-move-up';up.innerHTML=ICON_UP;up.title='上移'
+      up.disabled=index===0
+      up.onclick=e=>{e.stopPropagation();moveField(index,index-1)}
+      const down=document.createElement('button');down.type='button';down.className='pv-move pv-move-down';down.innerHTML=ICON_DOWN;down.title='下移'
+      down.disabled=index===fields.length-1
+      down.onclick=e=>{e.stopPropagation();moveField(index,index+1)}
+      const ops=document.createElement('div');ops.className='pv-ops'
+      const copy=document.createElement('button');copy.type='button';copy.innerHTML=ICON_COPY;copy.title='复制'
+      copy.onclick=e=>{e.stopPropagation();copyField(index)}
+      const del=document.createElement('button');del.type='button';del.innerHTML=ICON_DEL;del.title='删除'
+      del.onclick=e=>{e.stopPropagation();deleteField(index)}
+      ops.append(copy,del)
+      item.append(up,down,ops)
+    }
+
+    item.addEventListener('dragstart',()=>{fieldDragFrom=index;item.classList.add('dragging')})
+    item.addEventListener('dragend',()=>item.classList.remove('dragging'))
+    item.addEventListener('dragover',e=>e.preventDefault())
+    item.addEventListener('drop',e=>{
+      e.preventDefault()
+      if(fieldDragFrom===null||fieldDragFrom===index)return
+      const moved=fields.splice(fieldDragFrom,1)[0]
+      fields.splice(index,0,moved)
+      selectedFieldIndex=index
+      fieldDragFrom=null
+      renderFieldList()
+    })
+    box.append(item)
+  })
+  renderSettings()
+}
+
+let fieldDragFrom=null
+function moveField(from,to){
+  if(to<0||to>=fields.length)return
+  const moved=fields.splice(from,1)[0]
+  fields.splice(to,0,moved)
+  selectedFieldIndex=to
+  renderFieldList()
+}
+function copyField(index){
+  const clone=JSON.parse(JSON.stringify(fields[index]))
+  clone.id='field-'+Date.now()
+  clone.label=(clone.label||'')+' 副本'
+  fields.splice(index+1,0,clone)
+  selectedFieldIndex=index+1
+  renderFieldList()
+}
+function deleteField(index){
+  fields.splice(index,1)
+  if(selectedFieldIndex>=fields.length)selectedFieldIndex=fields.length-1
+  renderFieldList()
+}
+/* 只刷新中间预览的选中项控件，不重建右侧设置面板（避免选项输入框失焦） */
+function refreshPreviewOnly(){
+  const item=q('#field-list .pv-field.selected')
+  if(!item||selectedFieldIndex<0)return
+  const field=fields[selectedFieldIndex]
+  const oldControl=item.querySelector('.pv-field-control')
+  const newControl=renderPreviewControl(field)
+  newControl.classList.add('pv-field-control')
+  if(oldControl)oldControl.replaceWith(newControl)
+}
+
+/* ---------- 通用构建小工具 ---------- */
+function block(...children){const d=document.createElement('div');d.className='fs-block';d.append(...children);return d}
+function labelWithHelp(text,helpText){
+  const l=document.createElement('p');l.className='fs-label'
+  l.append(document.createTextNode(text))
+  if(helpText){const h=document.createElement('span');h.className='fs-help';h.textContent='?';h.title=helpText;l.append(h)}
+  return l
+}
+function hintText(text,starred){
+  const p=document.createElement('p');p.className='fs-hint'
+  if(starred){const s=document.createElement('span');s.className='fs-ast';s.textContent='*';p.append(s,document.createTextNode(text))}
+  else p.textContent=text
+  return p
+}
+function selectWrap(select){
+  const wrap=document.createElement('div');wrap.className='fs-select-wrap'
+  const arrow=document.createElementNS('http://www.w3.org/2000/svg','svg')
+  arrow.setAttribute('width','12');arrow.setAttribute('height','12');arrow.setAttribute('viewBox','0 0 12 12');arrow.setAttribute('fill','none')
+  arrow.innerHTML='<path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>'
+  wrap.append(select,arrow)
+  return wrap
+}
+
+/* 标识名 */
+function buildNameBlock(field,onChange){
+  const label=labelWithHelp('标识名')
+  const input=document.createElement('input');input.className='fs-input';input.value=field.label||''
+  input.oninput=()=>{field.label=input.value;onChange()}
+  const hint=hintText('标识名不能为空',true)
+  return block(label,input,hint)
+}
+/* 提示文字 */
+function buildHintBlock(field){
+  const label=labelWithHelp('提示文字')
+  const textarea=document.createElement('textarea');textarea.className='fs-textarea';textarea.value=field.hint||''
+  textarea.oninput=()=>{field.hint=textarea.value}
+  const hint=hintText('显示在标识名右侧的说明文字',true)
+  return block(label,textarea,hint)
+}
+/* 默认值：填空/数值 */
+function buildDefaultValueTextBlock(field){
+  const label=labelWithHelp('默认值')
+  const input=document.createElement('input');input.className='fs-input';input.value=field.defaultValue||''
+  input.oninput=()=>{field.defaultValue=input.value;refreshPreviewOnly()}
+  return block(label,input)
+}
+/* 默认值：选项（禁用态 select，与 A09 保持一致，不预置具体默认选项） */
+function buildDefaultValueSelectBlock(field){
+  const label=labelWithHelp('默认值')
+  const select=document.createElement('select');select.disabled=true
+  const opt=document.createElement('option');opt.textContent='请选择';select.append(opt)
+  return block(label,selectWrap(select))
+}
+/* 默认值：日期 */
+function buildDefaultValueDateBlock(field){
+  const label=labelWithHelp('默认值')
+  const trigger=document.createElement('div');trigger.className='fs-input'
+  trigger.style.cssText='display:flex;align-items:center;gap:8px;color:#9297a0;cursor:default'
+  trigger.innerHTML=ICON_CAL+'<span>请选择</span>'
+  return block(label,trigger)
+}
+/* 默认值：数值/百分数（带位数提示） */
+function buildDefaultValueNumberBlock(field,isPercent){
+  const label=labelWithHelp('默认值')
+  let control
+  if(isPercent){
+    const wrap=document.createElement('div');wrap.className='fs-percent-wrap'
+    wrap.style.position='relative'
+    const input=document.createElement('input');input.className='fs-input';input.style.paddingRight='32px';input.type='text';input.inputMode='decimal';input.value=field.defaultValue||''
+    input.oninput=()=>{field.defaultValue=input.value;refreshPreviewOnly()}
+    const suffix=document.createElement('span');suffix.textContent='%';suffix.style.cssText='position:absolute;right:12px;top:50%;transform:translateY(-50%);color:#41454d;font-size:14px'
+    wrap.append(input,suffix)
+    control=wrap
+  }else{
+    const input=document.createElement('input');input.className='fs-input';input.type='text';input.inputMode='decimal';input.value=field.defaultValue||''
+    input.oninput=()=>{field.defaultValue=input.value;refreshPreviewOnly()}
+    control=input
+  }
+  const hint=hintText(' 数字的位数必须少于'+(isPercent?'10':'15')+'位',true)
+  return block(label,control,hint)
+}
+/* 支持小数 + 限制数值范围（数值/百分数专属） */
+function buildDecimalRangeBlock(field,defaultLimit){
+  if(field.allowDecimal===undefined)field.allowDecimal=false
+  if(field.decimalLimit===undefined)field.decimalLimit=defaultLimit||2
+  const row1=document.createElement('div');row1.className='fs-decimal-row'
+  const l1=document.createElement('label')
+  const cb1=document.createElement('input');cb1.type='checkbox';cb1.checked=!!field.allowDecimal
+  const span1=document.createElement('span');span1.textContent='支持小数'
+  const help1=document.createElement('span');help1.className='fs-help';help1.textContent='?';help1.title='开启后可填写小数，并限制小数位数'
+  l1.append(cb1,span1,help1)
+  const limitText=document.createElement('span');limitText.textContent='限制'
+  const select=document.createElement('select');select.className='fs-decimal-select'
+  ;[1,2,3,4].forEach(n=>{const o=document.createElement('option');o.value=n;o.textContent=n;select.append(o)})
+  select.value=field.decimalLimit
+  select.disabled=!field.allowDecimal
+  select.onchange=()=>{field.decimalLimit=Number(select.value)}
+  const unitText=document.createElement('span');unitText.textContent='位'
+  cb1.onchange=()=>{field.allowDecimal=cb1.checked;select.disabled=!cb1.checked}
+  row1.append(l1,limitText,select,unitText)
+
+  const row2=document.createElement('div');row2.className='fs-decimal-row'
+  const l2=document.createElement('label')
+  const cb2=document.createElement('input');cb2.type='checkbox';cb2.checked=!!field.limitRange
+  cb2.onchange=()=>{field.limitRange=cb2.checked}
+  const span2=document.createElement('span');span2.textContent='限制数值范围'
+  l2.append(cb2,span2)
+  row2.append(l2)
+
+  return block(row1,row2)
+}
+/* 逻辑表单入口（选项类型，占位展示位） */
+function buildLogicFormBlock(){
+  const label=labelWithHelp('逻辑表单')
+  const btn=document.createElement('button');btn.type='button';btn.className='fs-logic-btn';btn.textContent='点击配置'
+  return block(label,btn)
+}
+/* 展示方式（单选=下拉，多选=平铺，与 A09 一致） */
+function buildDisplayModeBlock(field){
+  const isMulti=field.type==='multi-option'
+  if(!field.displayMode)field.displayMode=isMulti?'flat':'dropdown'
+  const label=labelWithHelp('展示方式')
+  const select=document.createElement('select')
+  const options=isMulti?[['flat','平铺'],['dropdown','下拉']]:[['dropdown','下拉'],['flat','平铺']]
+  options.forEach(([value,text])=>{const opt=document.createElement('option');opt.value=value;opt.textContent=text;select.append(opt)})
+  select.value=field.displayMode
+  select.onchange=()=>{field.displayMode=select.value;renderFieldList()}
+  return block(label,selectWrap(select))
+}
+/* 设为必填 / 隐藏字段：每一项自成一行，行间以细线分隔 */
+function buildToggleRows(field){
+  const wrap=document.createElement('div');wrap.className='fs-toggle-group'
+  function row(text,checked,onChange){
+    const r=document.createElement('label');r.className='fs-checkbox-row'
+    const cb=document.createElement('input');cb.type='checkbox';cb.checked=checked
+    cb.onchange=()=>onChange(cb.checked)
+    const span=document.createElement('span');span.textContent=text
+    r.append(cb,span)
+    return r
+  }
+  wrap.append(row('设为必填',!!field.required,v=>{field.required=v;renderFieldList()}))
+  wrap.append(row('隐藏字段',!!field.hidden,v=>{field.hidden=v}))
+  return wrap
+}
+/* 选项内容（选项类型专属） */
+let dragFromIndex=null
+function buildOptionsBlock(field){
+  if(!field.options||!field.options.length)field.options=['选1','选2','选3']
+  const label=labelWithHelp('选项内容')
+  const hint=hintText('每个字段至少保留一个选项',true)
+  const list=document.createElement('div')
+  function renderOptions(){
+    list.replaceChildren()
+    field.options.forEach((opt,idx)=>{
+      const row=document.createElement('div');row.className='fs-option-row';row.draggable=true
+      const input=document.createElement('input');input.value=opt
+      input.oninput=()=>{field.options[idx]=input.value;refreshPreviewOnly()}
+      const icons=document.createElement('div');icons.className='fs-option-icons'
+      const drag=document.createElement('button');drag.type='button';drag.className='fs-drag-handle';drag.innerHTML='<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="4" cy="3.5" r="1" fill="currentColor"/><circle cx="10" cy="3.5" r="1" fill="currentColor"/><circle cx="4" cy="7" r="1" fill="currentColor"/><circle cx="10" cy="7" r="1" fill="currentColor"/><circle cx="4" cy="10.5" r="1" fill="currentColor"/><circle cx="10" cy="10.5" r="1" fill="currentColor"/></svg>'
+      const del=document.createElement('button');del.type='button';del.innerHTML='<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 4H11.5M5.5 4V2.5H8.5V4M3.5 4L4 11.5H10L10.5 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+      del.disabled=field.options.length<=1
+      del.onclick=()=>{if(field.options.length>1){field.options.splice(idx,1);renderOptions();refreshPreviewOnly()}}
+      icons.append(drag,del)
+      row.append(input,icons)
+      row.addEventListener('dragstart',()=>{dragFromIndex=idx;row.classList.add('dragging')})
+      row.addEventListener('dragend',()=>row.classList.remove('dragging'))
+      row.addEventListener('dragover',e=>e.preventDefault())
+      row.addEventListener('drop',e=>{
+        e.preventDefault()
+        if(dragFromIndex===null||dragFromIndex===idx)return
+        const moved=field.options.splice(dragFromIndex,1)[0]
+        field.options.splice(idx,0,moved)
+        dragFromIndex=null
+        renderOptions()
+        refreshPreviewOnly()
+      })
+      list.append(row)
+    })
+  }
+  renderOptions()
+  const addBtn=document.createElement('button');addBtn.type='button';addBtn.className='fs-add-option';addBtn.textContent='＋ 添加新选项'
+  addBtn.onclick=()=>{field.options.push('选'+(field.options.length+1));renderOptions();refreshPreviewOnly()}
+  return block(label,hint,list,addBtn)
+}
+
+function renderSettings(){
+  const panel=q('#field-settings')
+  if(selectedFieldIndex<0||!fields[selectedFieldIndex]){
+    panel.innerHTML='<p class="fs-empty-hint">选择左侧字段类型新增，或点击中间列表中的字段进行编辑。</p>'
+    return
+  }
+  const field=fields[selectedFieldIndex]
+  panel.replaceChildren()
+  const title=document.createElement('h4');title.className='fs-title';title.textContent=typeLabels[field.type]
+  panel.append(title)
+  panel.append(buildNameBlock(field,renderFieldList))
+  panel.append(buildHintBlock(field))
+
+  if(field.type==='text'){
+    panel.append(buildDefaultValueTextBlock(field))
+    panel.append(buildToggleRows(field))
+  }else if(field.type==='option'||field.type==='multi-option'){
+    panel.append(buildOptionsBlock(field))
+    panel.append(buildLogicFormBlock())
+    panel.append(buildDisplayModeBlock(field))
+    panel.append(buildDefaultValueSelectBlock(field))
+    panel.append(buildToggleRows(field))
+  }else if(field.type==='number'||field.type==='percentage'){
+    panel.append(buildDefaultValueNumberBlock(field,field.type==='percentage'))
+    panel.append(buildDecimalRangeBlock(field,field.type==='percentage'?2:4))
+    panel.append(buildToggleRows(field))
+  }else if(field.type==='date'){
+    panel.append(buildDefaultValueDateBlock(field))
+    panel.append(buildToggleRows(field))
+  }else if(field.type==='image'){
+    panel.append(buildToggleRows(field))
+  }
+
+  const removeBtn=document.createElement('button')
+  removeBtn.type='button';removeBtn.className='secondary';removeBtn.style.marginTop='20px';removeBtn.style.width='100%';removeBtn.textContent='删除该字段'
+  removeBtn.onclick=()=>deleteField(selectedFieldIndex)
+  panel.append(removeBtn)
+}
+
+document.querySelectorAll('.field-type-btn').forEach(btn=>btn.addEventListener('click',()=>{
+  const type=btn.dataset.type
+  fields.push({id:'field-'+Date.now(),label:typeLabels[type],type,required:false})
+  selectedFieldIndex=fields.length-1
+  renderFieldList()
+}))
+
+q('#cancel-btn').onclick=()=>window.location.reload()
+q('#save-btn').onclick=()=>{
+  const name=q('#form-name').value.trim()
+  if(!name){alert('请填写表单名称。');return}
+  if(!fields.length){alert('请至少添加一个字段。');return}
+  if(fields.some(f=>!f.label.trim())){alert('请完整填写每个字段的标识名。');return}
+  if(fields.some(f=>(f.type==='option'||f.type==='multi-option')&&!(f.options||[]).filter(o=>o.trim()).length)){alert('单选或多选字段需至少保留一个有效选项。');return}
+  const rows=source.get('activityForms')
+  const updated={id:form.id,name,status:form.status,updatedAt:'2026-09-09 刚刚',fields}
+  if(rows.length)rows[0]=updated
+  else rows.push(updated)
+  source.set('activityForms',rows)
+  form=updated
+  const toast=document.createElement('div');toast.className='toast-save';toast.textContent='活动申请表单已保存'
+  document.body.append(toast)
+  window.setTimeout(()=>toast.remove(),1200)
+}
+
+renderStatus()
+renderFieldList()
+parent.postMessage({type:'prototype:page-ready',pageId:'A11'},'*')
+})()</script></body></html>

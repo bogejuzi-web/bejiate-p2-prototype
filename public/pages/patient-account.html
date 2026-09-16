@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title> · 患者账户</title>
+  <style>
+    :root { color: #181d26; background: #fff; font-family: "Haas", "PingFang SC", "Microsoft YaHei", sans-serif; }
+    * { box-sizing: border-box; } body { min-height: 100vh; margin: 0; background: #fff; } button, input { font: inherit; } button { cursor: pointer; }
+    .screen { min-height: 100vh; display: flex; flex-direction: column; padding: 30px 24px 24px; }.brand { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 500; letter-spacing: .04em; }.brand-mark { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 8px; color: #fff; background: #181d26; font-size: 15px; }
+    .intro { margin: 64px 0 30px; } h1 { max-width: 270px; margin: 0; font-size: 32px; font-weight: 400; line-height: 1.2; letter-spacing: -.03em; }.intro p { margin: 14px 0 0; color: #41454d; font-size: 14px; line-height: 1.6; }
+    .form { display: grid; gap: 16px; }.field { display: grid; gap: 8px; } label { color: #333840; font-size: 14px; } input { width: 100%; height: 44px; padding: 0 14px; border: 1px solid #dddddd; border-radius: 6px; outline: none; color: #181d26; background: #fff; } input:focus { border-color: #458fff; box-shadow: 0 0 0 2px rgba(69,143,255,.15); }.code-field { display: grid; grid-template-columns: 1fr auto; gap: 8px; }.code-button { min-width: 104px; height: 44px; padding: 0 10px; border: 1px solid #dddddd; border-radius: 6px; color: #181d26; background: #fff; font-size: 13px; }.code-button:disabled { color: #9297a0; background: #f8fafc; cursor: not-allowed; }.primary, .next { height: 48px; margin-top: 8px; border: 0; border-radius: 12px; color: #fff; background: #181d26; font-size: 16px; font-weight: 500; }.agreement { margin: 0; color: #41454d; font-size: 12px; line-height: 1.6; }.link { padding: 0; border: 0; color: #1b61c9; background: transparent; font-size: inherit; }
+    .result { display: none; margin-top: 20px; padding: 14px; border-radius: 10px; color: #173f3b; background: #f5e9d4; font-size: 13px; line-height: 1.55; }.result.visible { display: block; }.highlight { outline: 3px solid #f4d35e; outline-offset: 5px; border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <main class="screen">
+    <div class="brand"><span class="brand-mark">贝</span><span></span></div>
+    <section id="account-view">
+      <div class="intro"><h1>欢迎使用</h1></div>
+      <form class="form" id="account-form">
+        <div class="field" data-change-id="P01-C01"><label for="phone">手机号</label><input id="phone" inputmode="numeric" autocomplete="tel" maxlength="11" placeholder="请输入您的手机号"></div>
+        <div class="field" data-change-id="P01-C02"><label for="code">验证码</label><div class="code-field"><input id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="请输入验证码"><button class="code-button" id="code-button" type="button">获取验证码</button></div></div>
+        <p class="agreement">登录即表示您已阅读并同意 <button type="button" class="link" id="agreement-link" data-change-id="P01-C04">平台服务协议</button>。</p>
+        <button class="primary" id="submit" type="submit" data-change-id="P01-C03">登录</button>
+      </form>
+      <div class="result" id="result" aria-live="polite"></div>
+    </section>
+  </main>
+  <script>
+    (() => {
+      const $ = (s) => document.querySelector(s), result = $('#result');
+      const report = (type, scenarioId) => parent.postMessage({ type, pageId: 'P01', scenarioId }, '*');
+      const codeButton = $('#code-button');
+      codeButton.addEventListener('click', () => { let remaining = 60; codeButton.disabled = true; codeButton.textContent = `${remaining} 秒`; const timer = window.setInterval(() => { remaining -= 1; if (remaining > 0) { codeButton.textContent = `${remaining} 秒`; return; } window.clearInterval(timer); codeButton.disabled = false; codeButton.textContent = '重新获取'; }, 1000); });
+      $('#account-form').addEventListener('submit', (event) => { event.preventDefault(); report('prototype:state-changed', 'P01-S03'); parent.postMessage({ type: 'prototype:navigation-request', pageId: 'P03' }, '*'); });
+      $('#agreement-link').addEventListener('click', () => parent.postMessage({ type: 'prototype:navigation-request', pageId: 'P02' }, '*'));
+      function highlight(changeId) { const target = document.querySelector(`[data-change-id="${changeId}"]`); if (!target) { parent.postMessage({ type: 'prototype:highlight-result', changeId, success: false, message: '未找到标记区域' }, '*'); return; } target.classList.add('highlight'); target.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => target.classList.remove('highlight'), 1800); parent.postMessage({ type: 'prototype:highlight-result', changeId, success: true }, '*'); }
+      window.addEventListener('message', (event) => { const message = event.data || {}; if (message.type === 'prototype:highlight') highlight(message.changeId); });
+      parent.postMessage({ type: 'prototype:page-ready', pageId: 'P01' }, '*');
+    })();
+  </script>
+</body>
+</html>

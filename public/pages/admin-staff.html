@@ -1,0 +1,38 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title> · 员工管理</title>
+<script src="/nurse-portal-source.js"></script><script src="/admin-portal-shell.js"></script><link rel="stylesheet" href="/nurse-portal-layout.css"><style>.tools{display:flex;gap:10px;margin:24px 0}.tools input,.tools select{width:220px;height:42px;padding:0 12px;border:1px solid #ddd;border-radius:6px}.staff-row{grid-template-columns:.55fr 1fr 1.1fr 1.3fr 1.2fr .8fr 1.2fr}.staff-row .ops{display:flex;justify-content:flex-end;gap:12px}.drawer .panel{max-width:760px}.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.notice{min-height:18px;color:#aa2d00;font-size:13px}</style></head><body><main class="app"><aside class="side"></aside><section class="main" data-change-id="A10-C01"><header class="top"><h1>员工管理</h1><button class="primary" id="add">新增员工</button></header><div class="tools"><input id="search" placeholder="请输入员工姓名或账号"><select id="status"><option value="">全部状态</option><option value="active">启用</option><option value="disabled">停用</option></select></div><section class="table"><div class="row head staff-row"><span>ID</span><span>员工</span><span>手机号</span><span>角色</span><span>创建时间</span><span>状态</span><span>操作</span></div><div id="list"></div></section></section></main>
+<div class="drawer" id="drawer"><form class="panel" id="form"><h2 id="form-title">新增员工</h2><div class="field-grid"><label class="field"><span>登录账号</span><input id="account" required></label><label class="field"><span>姓名</span><input id="name" required></label><label class="field"><span>手机号</span><input id="phone" required></label><label class="field"><span>授权角色</span><select id="role"></select></label><label class="field"><span>所属科室</span><input id="department" required></label><label class="field"><span>是否启用</span><select id="enabled"><option value="active">启用</option><option value="disabled">停用</option></select></label></div><p class="notice" id="error"></p><div class="actions"><button id="cancel" type="button">取消</button><button class="primary" type="submit">确认</button></div></form></div>
+<script>(()=>{
+  const q=s=>document.querySelector(s),source=window.NURSE_PORTAL_SOURCE
+  AdminPortalShell.mountSidebar('.side','A10')
+  let edit=null
+  const staff=()=>source.get('staffMembers')||[]
+  function render(){
+    const key=q('#search').value.trim(),state=q('#status').value,box=q('#list');box.replaceChildren()
+    staff().filter(s=>(!key||(s.name+s.account).includes(key))&&(!state||s.status===state)).forEach((s,i)=>{
+      const active=s.status==='active',row=document.createElement('div');row.className='row staff-row'
+      row.innerHTML='<span>'+(i+1)+'</span><span>'+s.name+'</span><span>'+s.phone+'</span><span>'+s.role+'</span><span>'+s.createdAt+'</span><span><i class="tag '+(active?'success':'muted')+'">'+(active?'启用':'停用')+'</i></span>'
+      const ops=document.createElement('span');ops.className='ops'
+      [['编辑',()=>open(s)],[active?'停用':'启用',()=>{const all=staff(),x=all.find(v=>v.id===s.id);x.status=active?'disabled':'active';source.set('staffMembers',all);render()}],['删除',()=>{if(confirm('确认删除该员工？')){source.set('staffMembers',staff().filter(x=>x.id!==s.id));render()}}]].forEach(([text,action])=>{const button=document.createElement('button');button.className='text-btn'+(text==='删除'?' danger':'');button.textContent=text;button.onclick=action;ops.append(button)})
+      row.append(ops);box.append(row)
+    })
+    if(!box.children.length)box.innerHTML='<div class="empty">暂无符合条件的员工。</div>'
+  }
+  function open(item){
+    edit=item||null;q('#form-title').textContent=item?'编辑员工':'新增员工'
+    ;['account','name','phone','department'].forEach(key=>q('#'+key).value=item?item[key]:'')
+    q('#enabled').value=item?item.status:'active'
+    const role=q('#role');role.innerHTML=source.get('rolePermissions').filter(r=>(r.status||'active')==='active').map(r=>'<option>'+r.roleName+'</option>').join('');role.value=item?item.role:role.value
+    q('#error').textContent='';q('#drawer').classList.add('open')
+  }
+  q('#add').onclick=()=>open();q('#cancel').onclick=()=>q('#drawer').classList.remove('open')
+  q('#form').onsubmit=event=>{
+    event.preventDefault();const all=staff(),account=q('#account').value.trim()
+    if(!account){q('#error').textContent='请填写登录账号。';return}
+    if(!edit&&all.some(s=>s.account===account)){q('#error').textContent='登录账号已存在。';return}
+    const data={account,name:q('#name').value.trim(),phone:q('#phone').value.trim(),role:q('#role').value,department:q('#department').value.trim(),status:q('#enabled').value}
+    if(Object.values(data).some(value=>!value)){q('#error').textContent='请完整填写员工信息。';return}
+    if(edit)Object.assign(all.find(s=>s.id===edit.id),data);else all.push({...data,id:'staff-'+Date.now(),createdAt:'2026-09-10 10:00'})
+    source.set('staffMembers',all);q('#drawer').classList.remove('open');render()
+  }
+  q('#search').oninput=render;q('#status').onchange=render;render();parent.postMessage({type:'prototype:page-ready',pageId:'A10'},'*')
+})()</script></body></html>

@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title> · 平台服务协议</title>
+  <style>
+    :root { color: #181d26; background: #fff; font-family: "Haas", "PingFang SC", "Microsoft YaHei", sans-serif; } * { box-sizing: border-box; } body { margin: 0; background: #fff; } button { font: inherit; cursor: pointer; }.page { min-height: 100vh; padding: 20px 24px 40px; }.back { padding: 0; border: 0; color: #181d26; background: transparent; font-size: 14px; }.meta { margin-top: 32px; padding-bottom: 20px; border-bottom: 1px solid #dddddd; }.meta h1 { margin: 0; font-size: 28px; font-weight: 400; line-height: 1.25; }.meta p { margin: 10px 0 0; color: #41454d; font-size: 12px; }.content { color: #333840; font-size: 14px; line-height: 1.75; }.content h2 { margin: 28px 0 8px; color: #181d26; font-size: 17px; font-weight: 500; }.content p { margin: 0; }.notice { margin: 24px 0; padding: 14px; border-radius: 10px; color: #333840; background: #f5e9d4; font-size: 12px; line-height: 1.6; }.highlight { outline: 3px solid #f4d35e; outline-offset: 4px; border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <main class="page"><button class="back" type="button" id="back" data-change-id="P02-C01">‹ 返回</button><header class="meta"><h1>平台服务协议</h1><p>版本号：V1.0 · 生效日期：2026 年 9 月</p></header><div class="notice">以下为原型评审使用的虚拟协议内容，不代表正式法律文本。</div><article class="content"><h2>一、服务说明</h2><p>为患者提供健康服务管理入口，支持查看与本人相关的服务信息和健康档案内容。</p><h2>二、账户与信息</h2><p>您应使用本人手机号进入平台，并妥善保管验证码。平台将按照适用规则处理您的个人信息。</p><h2>三、协议更新</h2><p>平台服务协议可能更新。重要变更将以适当方式向您说明。</p><h2>四、联系我们</h2><p>如您对平台服务有疑问，可通过平台公示的服务渠道咨询。</p></article></main>
+  <script>
+    (() => { const back = document.querySelector('#back'); back.addEventListener('click', () => parent.postMessage({ type: 'prototype:navigation-request', pageId: 'P01' }, '*')); window.addEventListener('message', (event) => { const message = event.data || {}; if (message.type === 'prototype:highlight') { const target = document.querySelector(`[data-change-id="${message.changeId}"]`); if (target) { target.classList.add('highlight'); target.scrollIntoView({ behavior: 'smooth', block: 'center' }); parent.postMessage({ type: 'prototype:highlight-result', changeId: message.changeId, success: true }, '*'); } } }); parent.postMessage({ type: 'prototype:page-ready', pageId: 'P02' }, '*'); })();
+  </script>
+</body>
+</html>

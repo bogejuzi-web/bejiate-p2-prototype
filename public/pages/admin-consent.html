@@ -1,0 +1,129 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title> · 知情同意</title>
+<script src="/nurse-portal-source.js"></script><script src="/admin-portal-shell.js"></script>
+<link rel="stylesheet" href="/nurse-portal-layout.css">
+<style>
+.current-card{margin:24px 0;padding:22px;border:1px solid #dddddd;border-radius:10px;background:#fff}
+.current-card .head{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.current-card h2{margin:0;font-size:18px;font-weight:500}
+.current-card .meta{margin:0 0 12px;color:#41454d;font-size:13px}
+.current-card .content{color:#333840;font-size:14px;line-height:1.7;white-space:pre-wrap}
+.section-title{margin:28px 0 12px;font-size:15px;font-weight:500}
+.version-row{grid-template-columns:1fr .8fr 1fr .8fr}
+.version-row .ops{display:flex;justify-content:flex-end}
+.policy-group{margin-top:8px;display:grid;gap:10px}
+.policy-opt{display:flex;gap:10px;align-items:flex-start;padding:12px;border:1px solid #dddddd;border-radius:8px;cursor:pointer}
+.policy-opt input{margin-top:3px}
+.policy-opt strong{display:block;font-size:14px}
+.policy-opt span{display:block;margin-top:4px;color:#41454d;font-size:12px;line-height:1.5}
+.policy-note{margin-top:10px;color:#41454d;font-size:12px;line-height:1.6}
+.read-content{color:#333840;font-size:14px;line-height:1.8;white-space:pre-wrap}
+</style></head><body><main class="app"><aside class="side"></aside><section class="main" data-change-id="A04-C01"><header class="top"><h1>知情同意</h1><button class="primary" id="new-version">新建版本</button></header>
+
+<section class="current-card" id="current-card"></section>
+
+<h3 class="section-title">历史版本</h3>
+<section class="table"><div class="row head version-row"><span>版本</span><span>状态</span><span>生效时间</span><span>操作</span></div><div id="history-list"></div></section>
+</section></main>
+
+<div class="drawer" id="edit-drawer"><form class="panel" id="edit-form"><h2 id="edit-title">新建版本</h2><p>发布新版本后，将设为当前生效版本，原版本进入历史归档。</p>
+<label class="field"><span>标题</span><input id="e-title" placeholder="请输入知情同意标题" required></label>
+<label class="field"><span>正文内容</span><textarea id="e-content" style="height:160px" placeholder="请输入知情同意正文内容" required></textarea></label>
+<div class="field"><span>重签策略</span>
+<div class="policy-group">
+<label class="policy-opt"><input type="radio" name="policy" value="new-only" checked><span><strong>仅新患者签署新协议</strong><span>历史已签署患者无需补签，新患者签署新版本协议。</span></span></label>
+<label class="policy-opt"><input type="radio" name="policy" value="resign-all"><span><strong>要求历史患者补签</strong><span>历史已签署患者需补签新版本。</span></span></label>
+</div>
+<p class="policy-note" id="policy-note"></p>
+</div>
+<p class="notice" id="edit-error"></p>
+<div class="actions"><button type="button" id="edit-cancel">取消</button><button class="primary" type="submit">发布新版本</button></div></form></div>
+
+<div class="drawer" id="read-drawer"><section class="panel"><h2 id="read-title">版本内容</h2><p class="meta" id="read-meta" style="color:#41454d;font-size:13px"></p><div class="read-content" id="read-content"></div><div class="actions"><button type="button" id="read-close">关闭</button></div></section></div>
+
+<script>(()=>{
+const q=s=>document.querySelector(s)
+const source=window.NURSE_PORTAL_SOURCE
+AdminPortalShell.mountSidebar('.side','A04')
+
+const policyLabel={'new-only':'仅新患者签署新协议','resign-all':'要求历史患者补签'}
+
+function templates(){return source.get('consentTemplates')}
+function activeTemplate(){return templates().find(t=>t.status==='active')}
+
+function render(){
+  const active=activeTemplate()
+  const card=q('#current-card')
+  if(active){
+    card.innerHTML='<div class="head"><h2>'+active.title+'</h2><i class="tag success">当前生效 · '+active.version+'</i></div>'+
+      '<p class="meta">生效时间：'+active.effectiveAt+' · 重签策略：'+(policyLabel[active.resignPolicy]||active.resignPolicy)+'</p>'+
+      '<div class="content">'+active.content+'</div>'
+  }else{
+    card.innerHTML='<div class="empty">暂无生效的知情同意版本，点击右上角"新建版本"创建。</div>'
+  }
+  const list=q('#history-list')
+  list.replaceChildren()
+  const history=templates().filter(t=>t.status==='archived')
+  if(!history.length){
+    const empty=document.createElement('div');empty.className='empty';empty.textContent='暂无历史版本。'
+    list.append(empty)
+  }else{
+    history.forEach(t=>{
+      const row=document.createElement('div');row.className='row version-row'
+      row.innerHTML='<span>'+t.title+' '+t.version+'</span><span><i class="tag muted">已归档</i></span><span>'+t.effectiveAt+'</span>'
+      const ops=document.createElement('span');ops.className='ops'
+      const view=document.createElement('button');view.type='button';view.className='text-btn';view.textContent='查看'
+      view.onclick=()=>openRead(t)
+      ops.append(view)
+      row.append(ops)
+      list.append(row)
+    })
+  }
+}
+
+function openRead(t){
+  q('#read-title').textContent=t.title+' '+t.version
+  q('#read-meta').textContent='生效时间：'+t.effectiveAt+' · 重签策略：'+(policyLabel[t.resignPolicy]||t.resignPolicy)
+  q('#read-content').textContent=t.content
+  q('#read-drawer').classList.add('open')
+}
+q('#read-close').onclick=()=>q('#read-drawer').classList.remove('open')
+
+function updatePolicyNote(){
+  const val=(document.querySelector('input[name="policy"]:checked')||{}).value
+  q('#policy-note').textContent=val==='resign-all'?'历史患者可稍后补签，补签期间不暂停患者端服务与申请人随访。':'历史已签署患者无需补签。'
+}
+document.querySelectorAll('input[name="policy"]').forEach(r=>r.addEventListener('change',updatePolicyNote))
+
+function nextVersion(){
+  const nums=templates().map(t=>parseFloat((t.version||'V0').replace('V',''))||0)
+  const max=nums.length?Math.max.apply(null,nums):0
+  return 'V'+(max+1).toFixed(1)
+}
+
+q('#new-version').onclick=()=>{
+  const active=activeTemplate()
+  q('#edit-title').textContent='新建版本'
+  q('#e-title').value=active?active.title:'患者知情同意书'
+  q('#e-content').value=''
+  const first=document.querySelector('input[name="policy"][value="new-only"]');if(first)first.checked=true
+  updatePolicyNote()
+  q('#edit-error').textContent=''
+  q('#edit-drawer').classList.add('open')
+}
+q('#edit-cancel').onclick=()=>q('#edit-drawer').classList.remove('open')
+q('#edit-form').onsubmit=e=>{
+  e.preventDefault()
+  const title=q('#e-title').value.trim(),content=q('#e-content').value.trim()
+  const policy=(document.querySelector('input[name="policy"]:checked')||{}).value||'new-only'
+  if(!title||!content){q('#edit-error').textContent='请填写标题与正文内容。';return}
+  const all=templates()
+  all.forEach(t=>{if(t.status==='active')t.status='archived'})
+  all.unshift({id:'ct-'+Date.now(),title,version:nextVersion(),status:'active',effectiveAt:'2026-09-09',resignPolicy:policy,content})
+  source.set('consentTemplates',all)
+  q('#edit-drawer').classList.remove('open')
+  render()
+}
+
+render()
+parent.postMessage({type:'prototype:page-ready',pageId:'A04'},'*')
+})()</script></body></html>

@@ -1,0 +1,88 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title> · 患者管理</title>
+<script src="/nurse-portal-source.js"></script><script src="/admin-portal-shell.js"></script>
+<link rel="stylesheet" href="/nurse-portal-layout.css">
+<style>
+.tools{display:flex;gap:12px;margin:24px 0;flex-wrap:wrap}
+.tools input{width:280px;height:44px;padding:0 13px;border:1px solid #dddddd;border-radius:6px;background:#fff}
+.tools select{height:44px;padding:0 12px;border:1px solid #dddddd;border-radius:6px;background:#fff}
+.patient-row{grid-template-columns:1.1fr 1fr .8fr .9fr 1fr .7fr}
+.patient-row .name strong{display:block;font-weight:500}
+.patient-row .name span{color:#41454d;font-size:12px}
+.patient-row .ops{display:flex;justify-content:flex-end}
+.detail-block{margin:18px 0}
+.detail-block h3{margin:0 0 10px;font-size:14px;color:#181d26;font-weight:500}
+.detail-block .kv{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #eef0f2;font-size:14px}
+.detail-block .kv:last-child{border:0}
+.detail-block .kv span{color:#41454d}
+.consent-item{padding:10px 12px;border:1px solid #eef0f2;border-radius:8px;margin-bottom:8px}
+.consent-item strong{display:block;font-size:14px}
+.consent-item small{color:#41454d;font-size:12px}
+.hr-group{margin-bottom:14px}
+.hr-group .hr-title{margin:0 0 6px;color:#41454d;font-size:12px}
+</style></head><body><main class="app"><aside class="side"></aside><section class="main" data-change-id="A05-C01"><header class="top"><h1>患者管理</h1></header>
+<div class="tools"><input id="search" placeholder="搜索患者姓名或手机号"><select id="consent-filter"><option value="">全部知情同意状态</option><option value="signed">已签署</option><option value="unsigned">未签署</option></select><select id="bind-filter"><option value="">全部绑定状态</option><option value="bound">已绑定</option><option value="unbound">未绑定</option></select></div>
+<section class="table"><div class="row head patient-row"><span>患者</span><span>手机号</span><span>知情同意</span><span>绑定申请人</span><span>档案更新</span><span>操作</span></div><div id="list"></div></section>
+</section></main>
+
+<script>(()=>{
+const q=s=>document.querySelector(s)
+const source=window.NURSE_PORTAL_SOURCE
+AdminPortalShell.mountSidebar('.side','A05')
+
+function nurseName(id){const n=source.get('nurses').find(x=>x.id===id);return n?n.name:'-'}
+function boundNurse(patientId){
+  const b=source.get('bindings').find(x=>x.patientId===patientId&&x.status==='bound')
+  return b?nurseName(b.nurseId):null
+}
+function consentSignedStatus(patient){
+  const list=source.get('consents').filter(c=>c.patientId===patient.id)
+  if(list.some(c=>c.status==='signed'))return 'signed'
+  if(list.length)return 'unsigned'
+  return patient.consentSigned?'signed':'unsigned'
+}
+function healthUpdatedAt(patientId){
+  const rec=source.getHealthRecord(patientId)
+  return rec&&rec.record?rec.record.updatedAt:'-'
+}
+
+function render(){
+  const list=q('#list')
+  list.replaceChildren()
+  const keyword=q('#search').value.trim()
+  const consentF=q('#consent-filter').value
+  const bindF=q('#bind-filter').value
+  const patients=source.get('patients').filter(p=>{
+    if(keyword&&!(p.name+p.phone).includes(keyword))return false
+    if(consentF&&consentSignedStatus(p)!==consentF)return false
+    if(bindF){const bound=boundNurse(p.id);if(bindF==='bound'&&!bound)return false;if(bindF==='unbound'&&bound)return false}
+    return true
+  })
+  if(!patients.length){
+    const empty=document.createElement('div');empty.className='empty';empty.textContent='未找到符合条件的患者。'
+    list.append(empty);return
+  }
+  patients.forEach(p=>{
+    const row=document.createElement('div');row.className='row patient-row'
+    const signed=consentSignedStatus(p)==='signed'
+    const bound=boundNurse(p.id)
+    row.innerHTML='<span class="name"><strong>'+p.name+'</strong><span>患者编号 '+p.patientNo+'</span></span>'+
+      '<span>'+p.phone+'</span>'+
+      '<span><i class="tag '+(signed?'success':'muted')+'">'+(signed?'已签署':'未签署')+'</i></span>'+
+      '<span>'+(bound||'<i class="tag muted">未绑定</i>')+'</span>'+
+      '<span>'+healthUpdatedAt(p.id)+'</span>'
+    const ops=document.createElement('span');ops.className='ops'
+    const view=document.createElement('button');view.type='button';view.className='text-btn';view.textContent='查看'
+    view.onclick=()=>{source.setSelectedPatientId(p.id);window.top.location.assign('/?page=AD01')}
+    ops.append(view)
+    row.append(ops)
+    list.append(row)
+  })
+}
+
+q('#search').oninput=render
+q('#consent-filter').onchange=render
+q('#bind-filter').onchange=render
+
+render()
+parent.postMessage({type:'prototype:page-ready',pageId:'A05'},'*')
+})()</script></body></html>

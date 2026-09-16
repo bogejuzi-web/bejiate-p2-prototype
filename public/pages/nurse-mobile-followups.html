@@ -1,0 +1,118 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title> · 随访</title>
+<script src="/nurse-portal-source.js"></script><script src="/nurse-portal-mobile-shell.js"></script><script src="/followup-alert-shared.js"></script><script src="/followup-form-shared.js"></script>
+<style>
+:root{font-family:"Haas","PingFang SC","Microsoft YaHei",sans-serif;color:#181d26}
+*{box-sizing:border-box}
+body{margin:0}
+button,input,textarea{font:inherit}
+.m-tabs{display:flex;gap:8px;margin-bottom:12px}
+.m-tabs[hidden]{display:none}
+.m-plan-entry{display:flex;align-items:center;justify-content:space-between;width:100%;margin:0 0 12px;padding:12px;border:1px solid #dddddd;border-radius:10px;background:#fff;color:#181d26;text-align:left}.m-plan-entry strong{font-size:14px;font-weight:500}.m-plan-entry span{color:#1b61c9;font-size:13px}
+.m-tabs button{flex:1;padding:9px 0;border:1px solid #dddddd;border-radius:8px;background:#fff;color:#41454d;font-size:13px}
+.m-tabs button.active{border-color:#181d26;background:#181d26;color:#fff}
+.m-filter{width:100%;height:40px;margin-bottom:10px;padding:0 10px;border:1px solid #dddddd;border-radius:8px;background:#fff}.m-view-switch{display:flex;gap:8px;margin-bottom:12px}.m-view-switch button{flex:1;padding:9px;border:1px solid #dddddd;border-radius:8px;background:#fff}.m-view-switch button.active{border-color:#181d26;background:#181d26;color:#fff}.m-calendar{padding:12px;border:1px solid #dddddd;border-radius:10px;background:#fff}.m-calendar-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.m-calendar-head button{border:0;background:transparent;font-size:18px}.m-calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}.m-calendar-week{text-align:center;color:#41454d;font-size:11px}.m-calendar-day{min-height:42px;padding:5px;border:1px solid #eeeeee;border-radius:5px;background:#fff}.m-calendar-day.selected{border-color:#181d26;background:#f4f6f8}.m-calendar-statuses{display:flex;justify-content:center;gap:3px;margin-top:5px}.m-calendar-status{width:5px;height:5px;border-radius:50%;background:#f4d35e}.m-calendar-status.done{background:#006400}.m-calendar-status.overdue{background:#aa2d00}.m-calendar-detail{margin-top:14px}.m-calendar-detail h3{font-size:14px}
+.m-task-list{display:flex;flex-direction:column;gap:10px}
+.m-task-card{padding:16px;border:1px solid #dddddd;border-radius:10px;background:#fff}
+.m-task-card .tag{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px}
+.m-task-card .tag.warning{background:#f4d35e;color:#181d26}
+.m-task-card .tag.danger{background:#fdece5;color:#aa2d00}
+.m-task-card .tag.success{background:#e7f4f1;color:#006400}
+.m-task-card strong{display:block;margin:8px 0 4px;font-size:15px;font-weight:500}
+.m-task-card p{margin:0;color:#41454d;font-size:13px}
+.m-phone-line{display:flex;align-items:center;gap:8px;margin:0 0 4px;color:#41454d;font-size:13px}.m-task-card .m-copy-phone{width:auto;height:auto;margin:0;padding:2px 7px;border:1px solid #dddddd;border-radius:5px;background:#fff;color:#1b61c9;font-size:12px}
+.m-task-card button{margin-top:12px;width:100%;height:40px;border:0;border-radius:8px;background:#181d26;color:#fff}
+.m-task-card button.overdue{background:#aa2d00}
+.m-task-card button.secondary{background:#fff;border:1px solid #dddddd;color:#1b61c9}
+.m-empty{padding:32px 16px;border:1px dashed #cbd5dc;border-radius:10px;color:#41454d;text-align:center;font-size:13px}
+.m-full{position:fixed;inset:0;z-index:20;background:#fff;display:none;flex-direction:column}
+.m-full.open{display:flex}
+.m-full-header{display:flex;align-items:center;gap:8px;min-height:44px;padding:0 12px;border-bottom:1px solid #dddddd}
+.m-full-header button{border:0;background:transparent;color:#1b61c9;font-size:15px;padding:8px 4px}
+.m-full-header h2{flex:1;margin:0;font-size:16px;font-weight:500;text-align:center}
+.m-full-body{flex:1;overflow-y:auto;padding:16px}
+.m-field{display:block;margin:14px 0}
+.m-field span{display:block;margin-bottom:6px;font-size:13px;color:#41454d}
+.m-field input,.m-field textarea{width:100%;padding:10px;border:1px solid #dddddd;border-radius:6px;font:inherit}
+.m-field textarea{height:80px}
+.m-field input:disabled,.m-field textarea:disabled{background:#f8fafc;color:#41454d}
+.m-submit{width:100%;height:46px;margin-top:16px;border:0;border-radius:10px;background:#181d26;color:#fff}
+.m-notice{margin-top:10px;color:#aa2d00;font-size:13px}
+</style></head><body>
+<div class="m-full" id="full"><div class="m-full-header"><button type="button" id="full-close">取消</button><h2 id="full-title">填写随访内容</h2><span style="width:44px"></span></div><div class="m-full-body"><p id="full-hint" style="color:#41454d;font-size:13px;margin:0 0 12px"></p><form id="full-form"><label class="m-field">服务方式<select id="full-method"><option value="phone">电话随访</option><option value="offline">线下随访</option><option value="immediate">随时随访</option></select></label><div id="full-fields"></div><p class="m-notice" id="full-error"></p><button class="m-submit" type="submit" id="full-submit">提交随访</button></form></div></div>
+<script>(()=>{
+const source=window.NURSE_PORTAL_SOURCE
+const nurseId=source.getCurrentNurseId()
+const fullOverlay=document.querySelector('#full')
+const content=NursePortalMobileShell.mountShell({title:'随访',activeTab:'NM05'})
+document.body.append(fullOverlay)
+
+let view='active',mode='all',patientId='',month=8,selectedDate='2026-09-09'
+const planEntry=document.createElement('button');planEntry.type='button';planEntry.className='m-plan-entry';planEntry.innerHTML='<strong>随访计划</strong><span>新建与维护 ›</span>';planEntry.onclick=()=>parent.postMessage({type:'prototype:navigation-request',pageId:'NM07'},'*')
+const tabs=document.createElement('div');tabs.className='m-tabs'
+;[['active','待执行'],['done','已完成'],['overdue','已逾期']].forEach(([key,label])=>{
+  const btn=document.createElement('button');btn.type='button';btn.textContent=label
+  btn.classList.toggle('active',key===view)
+  btn.onclick=()=>{view=key;Array.from(tabs.children).forEach(b=>b.classList.remove('active'));btn.classList.add('active');render()}
+  tabs.append(btn)
+})
+const list=document.createElement('div');list.className='m-task-list'
+const patientSelect=document.createElement('select');patientSelect.className='m-filter';patientSelect.innerHTML='<option value="">全部患者</option>'
+const viewSwitch=document.createElement('div');viewSwitch.className='m-view-switch';viewSwitch.innerHTML='<button class="active" data-mode="all">全部</button><button data-mode="calendar">日历</button>'
+content.append(planEntry,patientSelect,viewSwitch,tabs,list)
+
+function patientName(id){const p=source.get('patients').find(x=>x.id===id);return p?p.name:'未知患者'}
+function patientById(id){return source.get('patients').find(x=>x.id===id)}
+function planById(id){return source.get('plans').find(x=>x.id===id)}
+function copyPhone(phone,button){const value=(phone||'').replace(/\s/g,'');const copied=()=>{button.textContent='已复制';button.disabled=true;setTimeout(()=>{button.textContent='复制手机号';button.disabled=false},1600)};const fallback=()=>{const input=document.createElement('textarea');input.value=value;input.setAttribute('readonly','');input.style.position='fixed';input.style.opacity='0';document.body.append(input);input.select();const success=document.execCommand('copy');input.remove();if(success)copied();else button.textContent='复制失败'};if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(value).then(copied).catch(fallback);else fallback()}
+function taskCard(task,container){const plan=planById(task.planId);const patient=patientById(task.patientId);const card=document.createElement('article');card.className='m-task-card';const tag=document.createElement('span');tag.className='tag '+(task.status==='overdue'?'danger':task.status==='done'?'success':'warning');tag.textContent=task.status==='overdue'?'已逾期':task.status==='done'?'已完成':(task.status==='due-today'?'待执行·今日':'待执行');const name=document.createElement('strong');name.textContent=(patient?patient.name:'未知患者')+' · '+(plan?plan.name:'');const phoneLine=document.createElement('div');phoneLine.className='m-phone-line';const phone=document.createElement('span');phone.textContent='手机号：'+(patient?patient.phone:'--');const copyPhoneButton=document.createElement('button');copyPhoneButton.type='button';copyPhoneButton.className='m-copy-phone';copyPhoneButton.textContent='复制手机号';copyPhoneButton.disabled=!patient;copyPhoneButton.onclick=()=>copyPhone(patient&&patient.phone,copyPhoneButton);phoneLine.append(phone,copyPhoneButton);const desc=document.createElement('p');desc.textContent='计划时间：'+task.scheduledDate;const button=document.createElement('button');button.type='button';if(task.status==='done'){button.className='secondary';button.textContent='查看记录';button.onclick=()=>openForm(task,plan,true)}else{button.className=task.status==='overdue'?'overdue':'';button.textContent=task.status==='overdue'?'补录随访':'开始随访';button.onclick=()=>openForm(task,plan,false)}card.append(tag,name,phoneLine,desc,button);container.append(card)}
+
+function render(){
+  list.replaceChildren()
+  const all=source.get('tasks').filter(t=>t.nurseId===nurseId)
+  const ids=[...new Set(all.map(t=>t.patientId))];patientSelect.innerHTML='<option value="">全部患者</option>'+ids.map(id=>'<option value="'+id+'">'+patientName(id)+'</option>').join('');patientSelect.value=patientId
+  let rows=mode==='calendar'?all:(view==='active'?all.filter(t=>['pending','due-today'].includes(t.status)):all.filter(t=>t.status===view));if(patientId)rows=rows.filter(t=>t.patientId===patientId)
+  if(mode==='calendar'){renderCalendar(rows);return}
+  if(!rows.length){
+    const empty=document.createElement('div');empty.className='m-empty';empty.textContent='当前没有此状态的随访任务。'
+    list.append(empty);return
+  }
+  rows.forEach(task=>taskCard(task,list))
+}
+function renderCalendar(rows){list.replaceChildren();const cal=document.createElement('section');cal.className='m-calendar';const head=document.createElement('header');head.className='m-calendar-head';head.innerHTML='<button id="m-prev">‹</button><strong>2026 年 '+(month+1)+' 月</strong><button id="m-next">›</button>';const grid=document.createElement('div');grid.className='m-calendar-grid';['一','二','三','四','五','六','日'].forEach(x=>{const w=document.createElement('span');w.className='m-calendar-week';w.textContent=x;grid.append(w)});const offset=(new Date(2026,month,1).getDay()+6)%7,days=new Date(2026,month+1,0).getDate();for(let i=0;i<offset;i++)grid.append(document.createElement('span'));for(let d=1;d<=days;d++){const date='2026-'+String(month+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'),dayTasks=rows.filter(t=>t.scheduledDate===date),states=[...new Set(dayTasks.map(t=>t.status==='due-today'||t.status==='pending'?'pending':t.status))];const b=document.createElement('button');b.className='m-calendar-day'+(date===selectedDate?' selected':'');b.innerHTML=d+(states.length?'<span class="m-calendar-statuses">'+states.map(s=>'<i class="m-calendar-status '+(s==='pending'?'':s)+'"></i>').join('')+'</span>':'');b.onclick=()=>{selectedDate=date;render()};grid.append(b)}const detail=document.createElement('div');detail.className='m-calendar-detail';detail.innerHTML='<h3>'+selectedDate+' 的任务</h3>';const selected=rows.filter(t=>t.scheduledDate===selectedDate);if(!selected.length)detail.innerHTML+='<div class="m-empty">该日期没有随访任务。</div>';else selected.forEach(t=>taskCard(t,detail));cal.append(head,grid,detail);list.append(cal);document.querySelector('#m-prev').onclick=()=>{month=Math.max(0,month-1);render()};document.querySelector('#m-next').onclick=()=>{month=Math.min(11,month+1);render()}}
+patientSelect.onchange=()=>{patientId=patientSelect.value;render()};viewSwitch.onclick=e=>{const b=e.target.closest('[data-mode]');if(!b)return;mode=b.dataset.mode;tabs.hidden=mode==='calendar';viewSwitch.querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));render()}
+
+let current=null
+function openForm(task,plan,readOnly){
+  current={task,plan,readOnly}
+  const record=readOnly?source.get('records').find(r=>r.taskId===task.id):null
+  document.querySelector('#full-title').textContent=readOnly?'随访记录':(task.status==='overdue'?'补录随访内容':'填写随访内容')
+  document.querySelector('#full-hint').textContent=readOnly?('完成时间：'+(record?record.submittedAt:'')):(task.status==='overdue'?'补录后会保留原任务日期与本次提交时间。':'提交后将自动更新该患者健康档案，并保留本次随访记录。')
+  const fields=document.querySelector('#full-fields')
+  const templateFields=(plan&&plan.templateVersionSnapshot&&plan.templateVersionSnapshot.fields)||[]
+  window.FollowupForm.renderFields(fields,templateFields,{fieldClass:'m-field',readOnly,values:record&&record.values})
+  document.querySelector('#full-error').textContent=''
+  document.querySelector('#full-submit').hidden=readOnly
+  document.querySelector('#full').classList.add('open')
+}
+document.querySelector('#full-close').onclick=()=>document.querySelector('#full').classList.remove('open')
+document.querySelector('#full-form').onsubmit=e=>{
+  e.preventDefault()
+  if(current.readOnly){document.querySelector('#full').classList.remove('open');return}
+  const {values,missing}=window.FollowupForm.collectValues(document.querySelector('#full-fields'))
+  if(missing){document.querySelector('#full-error').textContent='请完整填写必填项。';return}
+  const tasks=source.get('tasks')
+  const task=tasks.find(x=>x.id===current.task.id)
+  if(task)task.status='done'
+  source.set('tasks',tasks)
+  const records=source.get('records')
+  const record={id:'record-'+Date.now(),taskId:current.task.id,planId:current.task.planId,patientId:current.task.patientId,nurseId,templateId:current.plan.templateId,templateFields:current.plan.templateVersionSnapshot.fields,values,followupMethod:document.querySelector('#full-method').value,submittedAt:new Date().toLocaleString('sv-SE').replace('T',' ').slice(0,16),submittedAtSort:new Date().toISOString()}
+  records.push(record)
+  source.set('records',records)
+  window.FollowupAlert.createForRecord(current.plan.templateId,record)
+  document.querySelector('#full').classList.remove('open')
+  render()
+}
+
+render()
+parent.postMessage({type:'prototype:page-ready',pageId:'NM05'},'*')
+})()</script></body></html>

@@ -1,0 +1,80 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title> · 我的</title>
+<script src="/nurse-portal-source.js"></script><script src="/nurse-portal-shell.js"></script>
+<link rel="stylesheet" href="/nurse-portal-layout.css">
+<style>
+.profile-card{max-width:480px;margin-top:24px;padding:28px;border:1px solid #dddddd;border-radius:10px;background:#fff}
+.profile-card .avatar{display:flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:9999px;background:#181d26;color:#fff;font-size:20px;font-weight:500}
+.profile-row{display:flex;justify-content:space-between;padding:14px 0;border-bottom:1px solid #eef0f2}
+.profile-row:last-child{border:0}
+.profile-row span{color:#41454d;font-size:13px}
+.profile-row strong{font-size:14px;font-weight:500}
+.logout-btn{margin-top:20px;width:100%;padding:12px;border:1px solid #dddddd;border-radius:8px;background:#fff;color:#aa2d00}
+.password-btn{margin-top:14px;width:100%;padding:12px;border:1px solid #dddddd;border-radius:8px;background:#fff;color:#1b61c9}
+.password-feedback{min-height:18px;margin:10px 0 0;color:#006400;font-size:13px;text-align:center}
+.password-error{min-height:18px;margin:14px 0 0;color:#aa2d00;font-size:13px}
+.score-toggle{display:block;width:100%;max-width:600px;margin-top:14px;padding:16px;border:1px solid #dddddd;border-radius:10px;background:#fff;text-align:left}.score-toggle strong{font-size:15px;font-weight:500}.score-toggle span{display:block;margin-top:4px;color:#41454d;font-size:13px}.score-panel{display:none;max-width:860px;margin-top:12px}.score-panel.open{display:block}.score-meta{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;color:#41454d;font-size:13px}.score-meta strong{color:#181d26;font-size:14px;font-weight:500}.score-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}.score-card{padding:16px;border:1px solid #dddddd;border-radius:10px;background:#fff}.score-card.target-success{border-color:#9ad2b0;background:#f3fbf6}.score-card.target-warning{border-color:#f0d39a;background:#fffaf0}.score-card.target-danger{border-color:#f0b5a4;background:#fff7f5}.score-card span{display:block;color:#41454d;font-size:13px}.score-card small{display:block;margin-top:6px;color:#6d727c;font-size:12px}.score-card strong{display:block;margin-top:8px;font-size:24px;font-weight:500}.score-card strong em{margin-left:3px;color:#6d727c;font-size:14px;font-style:normal;font-weight:400}.score-card.target-success strong{color:#147a3e}.score-card.target-warning strong{color:#a66a00}.score-card.target-danger strong{color:#b44226}@media(max-width:900px){.score-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style></head><body><main class="app"><aside class="side"></aside><section class="main" data-change-id="N09-C01">
+<header class="top"><h1>我的</h1></header>
+<section class="profile-card">
+<div class="avatar" id="avatar"></div>
+<div style="margin-top:16px">
+<div class="profile-row"><span>姓名</span><strong id="p-name"></strong></div>
+<div class="profile-row"><span>账号</span><strong id="p-account"></strong></div>
+<div class="profile-row"><span>所属</span><strong id="p-department"></strong></div>
+</div>
+<button type="button" class="password-btn" id="change-password">修改密码</button>
+<button type="button" class="logout-btn" id="logout">退出登录</button>
+<p class="password-feedback" id="password-feedback" role="status"></p>
+</section>
+</section></main>
+<div class="dialog" id="confirm"><section class="panel"><h2>确认退出登录？</h2><p style="color:#41454d;font-size:14px">退出后将清除当前演示态数据并返回登录页。</p><div class="actions"><button type="button" id="confirm-cancel">取消</button><button class="primary" id="confirm-ok">确认退出</button></div></section></div>
+<div class="dialog" id="password-dialog"><form class="panel" id="password-form"><h2>修改密码</h2><label class="field">原密码<input id="current-password" type="password" autocomplete="current-password" required></label><label class="field">新密码<input id="new-password" type="password" autocomplete="new-password" minlength="6" required></label><label class="field">确认新密码<input id="confirm-password" type="password" autocomplete="new-password" minlength="6" required></label><p class="password-error" id="password-error" role="alert"></p><div class="actions"><button type="button" id="password-cancel">取消</button><button class="primary" type="submit">确认修改</button></div></form></div>
+<script>(()=>{
+const q=s=>document.querySelector(s)
+const source=window.NURSE_PORTAL_SOURCE
+const nurseId=source.getCurrentNurseId()
+NursePortalShell.mountSidebar('.side','N09')
+
+const nurse=source.get('nurses').find(n=>n.id===nurseId)||{name:'申请人',account:'','department':''}
+q('#avatar').textContent=(nurse.name||'护').slice(0,1)
+q('#p-name').textContent=nurse.name
+q('#p-account').textContent=nurse.account
+q('#p-department').textContent='医院 · '+(nurse.department||'内科')
+
+q('#logout').onclick=()=>q('#confirm').classList.add('open')
+q('#confirm-cancel').onclick=()=>q('#confirm').classList.remove('open')
+q('#confirm-ok').onclick=()=>{
+  source.clearSession()
+  parent.postMessage({type:'prototype:navigation-request',pageId:'N01'},'*')
+}
+
+q('#change-password').onclick=()=>{
+  q('#password-form').reset()
+  q('#password-error').textContent=''
+  q('#password-dialog').classList.add('open')
+  q('#current-password').focus()
+}
+q('#password-cancel').onclick=()=>q('#password-dialog').classList.remove('open')
+q('#password-form').onsubmit=e=>{
+  e.preventDefault()
+  const current=q('#current-password').value
+  const next=q('#new-password').value
+  const confirm=q('#confirm-password').value
+  const error=q('#password-error')
+  if(current!==nurse.password){error.textContent='原密码不正确。';return}
+  if(next.length<6){error.textContent='新密码至少需要 6 位。';return}
+  if(next!==confirm){error.textContent='两次输入的新密码不一致。';return}
+  if(next===current){error.textContent='新密码不能与原密码相同。';return}
+  const nurses=source.get('nurses')
+  const target=nurses.find(item=>item.id===nurseId)
+  if(!target){error.textContent='当前申请人账号不存在。';return}
+  target.password=next
+  source.set('nurses',nurses)
+  nurse.password=next
+  q('#password-dialog').classList.remove('open')
+  q('#password-feedback').textContent='密码已修改，下次登录请使用新密码。'
+  parent.postMessage({type:'prototype:state-changed',pageId:'N09',scenarioId:'N09-S03'},'*')
+}
+
+parent.postMessage({type:'prototype:page-ready',pageId:'N09'},'*')
+})()</script></body></html>

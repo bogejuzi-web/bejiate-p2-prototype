@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;margin:0;padding:32px;background:#f7faf9;color:#17212b}.card{padding:24px;background:#fff;border:1px solid #dce3e8;border-radius:12px;max-width:620px;margin:auto}.state{padding:18px;margin-top:18px;border-radius:8px;background:#e6f4f2}.highlight{outline:4px solid #f59e0b;outline-offset:4px}</style></head>
+<body><div class="card"><h1>HTML 兼容示例</h1><p>这个页面验证旧式 HTML 原型可以接入新承载框架。</p><div class="state" data-change-id="P02-C01"><strong id="state-title">默认状态</strong><p id="state-copy">等待承载框架切换状态。</p></div></div>
+<script>
+(function () {
+  const title = document.querySelector('#state-title')
+  const copy = document.querySelector('#state-copy')
+  function render(id) {
+    title.textContent = id === 'P02-S01' ? '处理中' : id === 'P02-S02' ? '已完成' : '默认状态'
+    copy.textContent = id ? '当前状态由承载框架传入。' : '等待承载框架切换状态。'
+    parent.postMessage({ type: 'prototype:state-changed', scenarioId: id }, '*')
+  }
+  window.addEventListener('message', (event) => {
+    const message = event.data
+    if (!message) return
+    if (message.type === 'prototype:scenario') render(message.scenarioId || '')
+    if (message.type === 'prototype:reset') render('')
+    if (message.type === 'prototype:highlight') {
+      const element = document.querySelector('[data-change-id="' + message.changeId + '"]')
+      if (element) {
+        element.classList.add('highlight')
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        parent.postMessage({ type: 'prototype:highlight-result', changeId: message.changeId, success: true }, '*')
+      } else {
+        parent.postMessage({ type: 'prototype:highlight-result', changeId: message.changeId, success: false, message: '未找到标记区域' }, '*')
+      }
+    }
+  })
+  render(new URLSearchParams(location.search).get('prototypeScenario') || '')
+  parent.postMessage({ type: 'prototype:page-ready' }, '*')
+}())
+</script>
+</body>
+</html>

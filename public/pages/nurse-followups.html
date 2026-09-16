@@ -1,0 +1,579 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title> · 随访管理</title>
+<script src="/nurse-portal-source.js"></script><script src="/nurse-portal-shell.js"></script><script src="/followup-alert-shared.js"></script><script src="/followup-form-shared.js"></script>
+<link rel="stylesheet" href="/nurse-portal-layout.css">
+<style>
+.section-tabs{display:flex;gap:22px;margin:20px 0;border-bottom:1px solid #dddddd}
+.section-tabs button{padding:10px 2px;border:0;border-bottom:2px solid transparent;background:transparent;color:#41454d;font-size:15px}
+.section-tabs button.active{border-color:#181d26;color:#181d26;font-weight:500}
+.view[hidden]{display:none}
+.task-card{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:20px;border:1px solid #dddddd;border-radius:10px;background:#fff}
+.task-card .content strong{display:block;margin:8px 0 4px;font-size:16px;font-weight:500}
+.task-card .content p{margin:0;color:#41454d;font-size:13px}
+.task-card .start{padding:9px 14px;border:0;border-radius:8px;background:#181d26;color:#fff;white-space:nowrap}
+.task-card .start.overdue{background:#aa2d00}
+.task-card .secondary-btn{padding:9px 14px;border:1px solid #dddddd;border-radius:8px;background:#fff;color:#1b61c9;white-space:nowrap}
+.task-layout{display:grid;grid-template-columns:220px 1fr;gap:24px;margin-top:16px}.task-patients{padding:16px;border:1px solid #dddddd;border-radius:10px;background:#fff}.task-patients h2{margin:0 0 12px;font-size:16px}.task-patients .search,.task-patients .doctor-filter{width:100%;height:40px;padding:0 10px;border:1px solid #dddddd;border-radius:6px;margin-bottom:10px;background:#fff}.task-patient{display:block;width:100%;margin-top:4px;padding:10px;border:0;border-radius:6px;background:transparent;text-align:left}.task-patient.active{background:#f4f6f8;font-weight:500}.task-patient span{display:block;margin-top:2px;color:#41454d;font-size:12px}.task-patient .patient-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0;color:#181d26;font-size:13px}.task-patient .doctor-name{margin:0;color:#6d727c;font-size:12px;font-weight:400;white-space:nowrap}.task-action-bar{display:flex;justify-content:center;margin-top:16px}.task-action-bar .primary{width:min(360px,100%)}.task-toolbar{display:flex;justify-content:space-between;align-items:center;margin:16px 0}.view-switch{display:flex;gap:8px}.view-switch button{padding:8px 12px;border:1px solid #dddddd;border-radius:6px;background:#fff}.view-switch button.active{border-color:#181d26;background:#181d26;color:#fff}#task-status-tabs[hidden]{display:none}.calendar-wrap{padding:20px;border:1px solid #dddddd;border-radius:10px;background:#fff}.calendar-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}.calendar-head button{border:0;background:transparent;font-size:18px}.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}.calendar-week{text-align:center;color:#41454d;font-size:12px}.calendar-day{min-height:68px;padding:8px;border:1px solid #eeeeee;border-radius:6px;background:#fff;text-align:left}.calendar-day.has-task{border-color:#9297a0}.calendar-day.selected{border-color:#181d26;background:#f4f6f8}.calendar-statuses{display:flex;gap:4px;margin-top:8px}.calendar-status{width:7px;height:7px;border-radius:50%;background:#f4d35e}.calendar-status.done{background:#006400}.calendar-status.overdue{background:#aa2d00}.calendar-detail{margin-top:18px}.calendar-detail h3{margin:0 0 10px;font-size:16px}@media(max-width:900px){.task-layout{grid-template-columns:1fr}.task-patients{display:flex;gap:6px;overflow:auto}.task-patients h2,.task-patients .search,.task-patients .doctor-filter{display:none}.task-patient{min-width:130px}}
+.plan-layout{display:grid;grid-template-columns:220px 1fr;gap:24px;margin-top:20px}
+.plan-patients{border:1px solid #dddddd;border-radius:10px;background:#fff;padding:16px}
+.plan-patients .search,.plan-patients .doctor-filter{width:100%;height:40px;padding:0 10px;border:1px solid #dddddd;border-radius:6px;margin-bottom:10px;background:#fff}
+.plan-patient{display:block;width:100%;margin-bottom:4px;padding:10px;border:0;border-radius:6px;background:transparent;text-align:left;font-size:13px}
+.plan-patient.active{background:#f4f6f8;color:#181d26;font-weight:500}
+.plan-patient span{display:block;margin-top:2px;color:#41454d;font-size:12px}
+.plan-patient .patient-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0;color:#181d26;font-size:13px}
+.plan-patient .doctor-name{margin:0;color:#6d727c;font-size:12px;font-weight:400;white-space:nowrap}
+.primary:disabled{cursor:not-allowed;background:#e0e2e6;color:#9297a0}
+.plan-card{padding:18px;border:1px solid #dddddd;border-radius:10px;background:#fff}
+.plan-card .head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.plan-card h3{margin:8px 0 6px;font-size:16px;font-weight:500}
+.plan-card p{margin:0;color:#41454d;font-size:13px}
+.plan-card .ops{display:flex;gap:16px;margin-top:14px}
+.template-list{display:grid;gap:8px;margin:16px 0}
+.template-option{padding:12px;border:1px solid #dddddd;border-radius:8px;background:#fff;text-align:left}
+.template-option.selected{border-color:#181d26;background:#f4f6f8}
+.template-option strong{display:block;font-size:14px}
+.template-option span{display:block;margin-top:4px;color:#41454d;font-size:12px}
+.template-scope-tabs{display:flex;gap:8px;margin:16px 0 4px}
+.template-scope-tabs button{padding:8px 10px;border:1px solid #dddddd;border-radius:6px;background:#fff;font-size:13px}
+.template-scope-tabs button.active{border-color:#181d26;background:#f4f6f8}
+.monthly-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-top:8px}.monthly-days button{height:32px;padding:0;border:1px solid #dddddd;border-radius:6px;background:#fff;font-size:12px}.monthly-days button.active{border-color:#181d26;background:#181d26;color:#fff}
+.advanced-filter-trigger{color:#1b61c9}.filter-chips{display:flex;flex-wrap:wrap;gap:8px;margin:-8px 0 14px}.filter-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;background:#f4f6f8;color:#41454d;font-size:12px}.filter-chip button{padding:0;border:0;background:transparent;color:#6d727c;font-size:15px;line-height:1;cursor:pointer}.filter-builder{display:grid;gap:10px}.filter-row{display:grid;grid-template-columns:1fr 100px 1fr auto;gap:8px;align-items:center}.filter-row select,.filter-row input,.scenario-name{height:40px;padding:0 10px;border:1px solid #dddddd;border-radius:6px;background:#fff}.filter-row button{height:32px;border:0;background:transparent;color:#aa2d00;cursor:pointer}.filter-actions{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:14px}.filter-actions .left{display:flex;gap:8px}.filter-actions button,.scenario-save button{padding:9px 12px;border:1px solid #dddddd;border-radius:6px;background:#fff}.filter-actions .primary,.scenario-save .primary{border-color:#181d26;background:#181d26;color:#fff}.scenario-save{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:12px}.scenario-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.scenario-list button{padding:7px 10px;border:1px solid #dddddd;border-radius:6px;background:#fff;font-size:12px}.scenario-list button.active{border-color:#181d26;background:#f4f6f8}@media(max-width:900px){.filter-row{grid-template-columns:1fr 1fr}.filter-row button{grid-column:2;justify-self:end}}
+</style></head><body><main class="app"><aside class="side"></aside><section class="main" data-change-id="N05-C01">
+<header class="top"><h1>随访管理</h1></header>
+<nav class="section-tabs"><button class="active" data-section="task">任务</button><button data-section="plan">计划</button></nav>
+
+<section class="view" id="task-view">
+<div class="task-action-bar"><button class="primary" type="button" id="manual-followup">记录随访</button></div>
+<div class="task-layout"><aside class="task-patients"><h2>患者列表</h2><select class="doctor-filter" id="task-doctor-filter" hidden><option value="">全部负责医生</option></select><input class="search" id="task-patient-search" placeholder="搜索姓名或手机号"><div id="task-patient-list"></div></aside><div><section class="summary" style="margin:0 0 16px"><div><strong id="pending-count">0</strong><span>待执行</span></div><div><strong id="done-count">0</strong><span>已完成</span></div><div><strong id="overdue-count">0</strong><span>未拜访</span></div></section><div class="task-toolbar"><strong id="task-title">随访任务查看</strong><div class="view-switch"><button id="advanced-filter-trigger" class="advanced-filter-trigger" type="button" hidden>高级筛选</button><button class="active" data-task-mode="all">全部</button><button data-task-mode="calendar">日历</button></div></div><div class="filter-chips" id="advanced-filter-chips" hidden></div><nav class="tabs" id="task-status-tabs" style="margin:0"><button class="active" data-status="active">待执行</button><button data-status="done">已完成</button><button data-status="overdue">未拜访</button></nav><section id="task-content"></section></div></div>
+</section>
+
+<section class="view" id="plan-view" hidden>
+<div class="plan-layout">
+<aside class="plan-patients"><select class="doctor-filter" id="plan-doctor-filter" hidden><option value="">全部负责医生</option></select><input class="search" id="plan-patient-search" placeholder="搜索姓名或手机号"><div id="plan-patient-list"></div></aside>
+<div>
+<header class="top"><div><p class="eyebrow" id="plan-patient-phone"></p><h2 id="plan-title" style="margin:0;font-size:22px;font-weight:400"></h2></div><button class="primary" id="create-plan">新建随访计划</button></header>
+<section class="summary" style="margin:16px 0"><div><strong id="active-plan-count">0</strong><span>生效中</span></div><div><strong id="ended-plan-count">0</strong><span>已结束</span></div><div><strong id="cancelled-plan-count">0</strong><span>已取消</span></div></section>
+<section class="cards" id="plan-list"></section>
+</div>
+</div>
+</section>
+
+</section></main>
+
+<div class="drawer" id="task-drawer"><form class="panel" id="task-form"><h2 id="task-form-title">填写随访内容</h2><p id="task-form-hint"></p><label class="field" id="task-method-row">服务方式<select id="task-method"><option value="phone">电话随访</option><option value="offline">线下随访</option><option value="immediate">随时随访</option></select></label><div id="task-form-fields"></div><p class="notice" id="task-form-error"></p><div class="actions"><button type="button" id="task-cancel">取消</button><button class="primary" type="submit" id="task-submit">提交随访</button></div></form></div>
+
+<div class="drawer" id="manual-followup-drawer"><form class="panel" id="manual-followup-form"><h2>随时填写随访</h2><p>选择随访模板和患者后填写内容，本次记录不关联既有任务。</p><label class="field">随访模板<select id="manual-template" required></select></label><label class="field">患者<select id="manual-patient" required></select></label><p class="notice" id="manual-followup-error"></p><div class="actions"><button type="button" id="manual-followup-cancel">取消</button><button class="primary" type="submit">开始填写</button></div></form></div>
+
+<div class="drawer" id="plan-drawer"><form class="panel" id="plan-form"><h2 id="plan-form-title">新建随访计划</h2><p>计划生效后将按排期生成随访任务；模板版本会在本计划中锁定。</p>
+<div class="template-scope-tabs"><button type="button" class="active" data-scope="private">我的模板</button><button type="button" data-scope="public">公共模板</button><button type="button" id="go-new-template">创建模板</button></div>
+<div class="template-list" id="template-options"></div>
+<label class="field">计划名称<input id="plan-name" required></label>
+<div class="field-row"><label class="field">首次随访日期<input id="plan-start" type="date" required></label><label class="field">执行频率<select id="plan-frequency" required><option value="daily">每天</option><option value="weekly" selected>每周</option><option value="monthly">每月</option></select></label></div>
+<div class="field-row"><label class="field" id="plan-frequency-day-field"><span id="plan-frequency-day-label">执行星期</span><select id="plan-frequency-day"></select><div class="monthly-days" id="plan-monthly-days" hidden></div></label><label class="field">执行时间<input id="plan-time" type="time" value="09:00" required></label></div>
+<label class="field">结束条件<select id="plan-end-type" required><option value="date" selected>结束日期</option><option value="occurrences">指定执行次数</option></select></label>
+<label class="field" id="plan-end-date-field">结束日期<input id="plan-end-date" type="date" required></label>
+<label class="field" id="plan-end-count-field" style="display:none">执行次数<input id="plan-end-count" type="number" min="1"></label>
+<p class="notice" id="plan-form-error"></p>
+<div class="actions"><button type="button" id="plan-cancel">取消</button><button class="primary" type="submit">保存并生效</button></div>
+</form></div>
+
+<div class="dialog" id="confirm"><section class="panel"><h2 id="confirm-title">确认操作</h2><p id="confirm-copy"></p><div class="actions"><button type="button" id="confirm-cancel">取消</button><button class="primary" id="confirm-ok">确认</button></div></section></div>
+
+<script>(()=>{
+const q=s=>document.querySelector(s)
+const source=window.NURSE_PORTAL_SOURCE
+const adminMode=new URLSearchParams(window.location.search).get('adminMode')==='1'
+const nurseId=source.getCurrentNurseId()
+NursePortalShell.mountSidebar('.side','N05')
+
+let pending=null
+function ask(title,copy,action){q('#confirm-title').textContent=title;q('#confirm-copy').textContent=copy;pending=action;q('#confirm').classList.add('open')}
+q('#confirm-cancel').onclick=()=>q('#confirm').classList.remove('open')
+q('#confirm-ok').onclick=()=>{q('#confirm').classList.remove('open');pending&&pending();pending=null}
+
+document.querySelectorAll('[data-section]').forEach(btn=>btn.addEventListener('click',()=>{
+  document.querySelectorAll('[data-section]').forEach(x=>x.classList.remove('active'))
+  btn.classList.add('active')
+  const section=btn.dataset.section
+  q('#task-view').hidden=section!=='task'
+  q('#plan-view').hidden=section!=='plan'
+}))
+
+/* ---------- 任务页签 ---------- */
+let taskView='active'
+let taskMode='all'
+let selectedTaskPatientId=null
+let calendarMonth=8
+let selectedCalendarDate='2026-09-09'
+let currentTask=null
+let advancedConditions=[]
+let activeScenarioName=''
+function patientName(id){const p=source.get('patients').find(x=>x.id===id);return p?p.name:'未知患者'}
+function planById(id){return source.get('plans').find(x=>x.id===id)}
+const advancedFilterFields={patient:{label:'患者',type:'text'},nurse:{label:'负责申请人',type:'select'},template:{label:'随访模板',type:'select'},plan:{label:'随访计划',type:'text'},status:{label:'任务状态',type:'select'},frequency:{label:'执行频率',type:'select'},scheduledDate:{label:'计划日期',type:'date'}}
+const statusLabel=status=>status==='done'?'已完成':status==='overdue'?'未拜访':status==='due-today'?'待执行（今日）':'待执行'
+const frequencyLabel=frequency=>({daily:'每天',weekly:'每周',monthly:'每月'})[frequency]||'未设置'
+function taskFieldValue(task,field){const plan=planById(task.planId)||{};if(field==='patient')return patientName(task.patientId);if(field==='nurse')return doctorName(task.patientId);if(field==='template')return plan.templateVersionSnapshot?.name||source.get('templates').find(t=>t.id===plan.templateId)?.name||'';if(field==='plan')return plan.name||'';if(field==='status')return task.status;if(field==='frequency')return plan.frequency||'';return task.scheduledDate||''}
+function taskMatchesAdvancedFilter(task){return advancedConditions.every(condition=>{const current=String(taskFieldValue(task,condition.field)||'');if(condition.operator==='between'){const [start,end]=condition.value.split('|');return (!start||current>=start)&&(!end||current<=end)}return condition.operator==='equals'?current===condition.value:current.includes(condition.value)})}
+function scenarioStore(){try{return JSON.parse(localStorage.getItem('beijietai-admin-followup-filter-scenarios')||'[]')}catch{return []}}
+function saveScenarios(items){localStorage.setItem('beijietai-admin-followup-filter-scenarios',JSON.stringify(items))}
+function renderAdvancedChips(){const box=q('#advanced-filter-chips');box.replaceChildren();box.hidden=!advancedConditions.length;if(!advancedConditions.length)return;advancedConditions.forEach((condition,index)=>{const chip=document.createElement('span');chip.className='filter-chip';const label=advancedFilterFields[condition.field].label;const operator=condition.operator==='between'?'介于':condition.operator==='equals'?'等于':'包含';const value=condition.field==='status'?statusLabel(condition.value):condition.field==='frequency'?frequencyLabel(condition.value):condition.value.replace('|',' 至 ');chip.innerHTML='<span>'+label+' '+operator+' '+value+'</span><button type="button" aria-label="移除筛选条件">×</button>';chip.querySelector('button').onclick=()=>{advancedConditions.splice(index,1);activeScenarioName='';renderAdvancedChips();renderTasks()};box.append(chip)})}
+function setupAdminAdvancedFilter(){
+  if(!adminMode)return
+  const trigger=q('#advanced-filter-trigger');trigger.hidden=false
+  const drawer=document.createElement('div');drawer.className='drawer';drawer.id='advanced-filter-drawer'
+  drawer.innerHTML='<section class="panel"><h2>高级筛选</h2><p>按任务字段组合筛选，可保存为个人常用场景。</p><div class="filter-builder" id="filter-builder"></div><div class="filter-actions"><div class="left"><button type="button" id="filter-add">+ 添加条件</button><button type="button" id="filter-reset">清除条件</button></div><button type="button" class="primary" id="filter-apply">应用筛选</button></div><div class="scenario-save"><input class="scenario-name" id="scenario-name" maxlength="20" placeholder="保存为筛选场景"><button type="button" id="scenario-save">保存</button></div><div class="scenario-list" id="scenario-list"></div><div class="actions"><button type="button" id="filter-close">关闭</button></div></section>'
+  document.body.append(drawer)
+  const editable=[]
+  const fieldOptions=field=>{if(field==='nurse')return source.get('nurses').map(n=>[n.name+'医生',n.name+'医生']);if(field==='template')return [...new Set(source.get('plans').map(p=>p.templateVersionSnapshot?.name||source.get('templates').find(t=>t.id===p.templateId)?.name).filter(Boolean))].map(v=>[v,v]);if(field==='status')return [['待执行','pending'],['待执行（今日）','due-today'],['已完成','done'],['未拜访','overdue']];if(field==='frequency')return [['每天','daily'],['每周','weekly'],['每月','monthly']];return []}
+  function renderRows(){const box=q('#filter-builder');box.replaceChildren();editable.forEach((condition,index)=>{const row=document.createElement('div');row.className='filter-row';const field=document.createElement('select');Object.entries(advancedFilterFields).forEach(([key,meta])=>field.add(new Option(meta.label,key)));field.value=condition.field;const operator=document.createElement('select');const isDate=advancedFilterFields[condition.field].type==='date';operator.add(new Option(isDate?'介于':'包含',isDate?'between':'contains'));if(!isDate)operator.add(new Option('等于','equals'));operator.value=condition.operator;const value=document.createElement('span');if(isDate){value.innerHTML='<input type="date" value="'+(condition.value.split('|')[0]||'')+'"><input type="date" value="'+(condition.value.split('|')[1]||'')+'">';value.style.display='grid';value.style.gridTemplateColumns='1fr 1fr';value.style.gap='6px';value.querySelectorAll('input').forEach(input=>input.oninput=()=>condition.value=[...value.querySelectorAll('input')].map(x=>x.value).join('|'))}else{const options=fieldOptions(condition.field);if(options.length){const select=document.createElement('select');select.append(new Option('请选择',''));options.forEach(([text,val])=>select.add(new Option(text,val)));select.value=condition.value;select.onchange=()=>condition.value=select.value;value.append(select)}else{const input=document.createElement('input');input.placeholder='请输入';input.value=condition.value;input.oninput=()=>condition.value=input.value;value.append(input)}}const remove=document.createElement('button');remove.type='button';remove.textContent='删除';remove.onclick=()=>{editable.splice(index,1);renderRows()};field.onchange=()=>{condition.field=field.value;condition.operator=advancedFilterFields[condition.field].type==='date'?'between':'contains';condition.value='';renderRows()};operator.onchange=()=>condition.operator=operator.value;row.append(field,operator,value,remove);box.append(row)})}
+  function renderScenarios(){const box=q('#scenario-list');box.replaceChildren();scenarioStore().forEach(item=>{const button=document.createElement('button');button.type='button';button.classList.toggle('active',item.name===activeScenarioName);button.textContent=item.name;button.onclick=()=>{editable.splice(0,editable.length,...item.conditions.map(c=>({...c})));advancedConditions.splice(0,advancedConditions.length,...item.conditions.map(c=>({...c})));activeScenarioName=item.name;renderRows();renderScenarios();renderAdvancedChips();renderTasks()};box.append(button)})}
+  trigger.onclick=()=>{editable.splice(0,editable.length,...advancedConditions.map(c=>({...c})));if(!editable.length)editable.push({field:'patient',operator:'contains',value:''});q('#scenario-name').value=activeScenarioName;renderRows();renderScenarios();drawer.classList.add('open')}
+  q('#filter-add').onclick=()=>{editable.push({field:'patient',operator:'contains',value:''});renderRows()}
+  q('#filter-reset').onclick=()=>{editable.splice(0);activeScenarioName='';renderRows()}
+  q('#filter-apply').onclick=()=>{advancedConditions.splice(0,advancedConditions.length,...editable.filter(c=>c.value));renderAdvancedChips();renderTasks();drawer.classList.remove('open')}
+  q('#scenario-save').onclick=()=>{const name=q('#scenario-name').value.trim();if(!name)return;const scenarios=scenarioStore().filter(item=>item.name!==name);scenarios.push({name,conditions:editable.filter(c=>c.value).map(c=>({...c}))});saveScenarios(scenarios);activeScenarioName=name;renderScenarios()}
+  q('#filter-close').onclick=()=>drawer.classList.remove('open')
+}
+function taskPatients(){const ids=[...new Set(source.get('tasks').filter(t=>adminMode||t.nurseId===nurseId).map(t=>t.patientId))];return source.get('patients').filter(p=>ids.includes(p.id))}
+function renderTaskPatients(){
+  const box=q('#task-patient-list'),keyword=q('#task-patient-search').value.trim(),doctorId=adminMode?q('#task-doctor-filter').value:''
+  box.replaceChildren()
+  const rows=taskPatients().filter(p=>(!doctorId||responsibleNurseId(p.id)===doctorId)&&(!keyword||(p.name+p.phone+doctorName(p.id)).includes(keyword)))
+  if(selectedTaskPatientId&&!rows.some(p=>p.id===selectedTaskPatientId))selectedTaskPatientId=null
+  const all=document.createElement('button');all.type='button';all.className='task-patient'+(!selectedTaskPatientId?' active':'');all.textContent='全部患者';all.onclick=()=>{selectedTaskPatientId=null;renderTaskPatients();renderTasks()};box.append(all)
+  rows.forEach(p=>{
+    const b=document.createElement('button');b.type='button';b.className='task-patient'+(p.id===selectedTaskPatientId?' active':'')
+    const title=document.createElement('span');title.className='patient-title'
+    const name=document.createElement('strong');name.textContent=p.name
+    title.append(name)
+    if(adminMode){const doctor=document.createElement('span');doctor.className='doctor-name';doctor.textContent=doctorName(p.id);title.append(doctor)}
+    const phone=document.createElement('span');phone.className='patient-phone';phone.textContent=p.phone
+    b.append(title,phone)
+    b.onclick=()=>{selectedTaskPatientId=p.id;renderTaskPatients();renderTasks()}
+    box.append(b)
+  })
+}
+
+function renderTasks(){
+  const box=q('#task-content')
+  box.replaceChildren()
+  const doctorId=adminMode?q('#task-doctor-filter').value:''
+  const all=source.get('tasks').filter(t=>(adminMode||t.nurseId===nurseId)&&(!doctorId||responsibleNurseId(t.patientId)===doctorId)&&(!adminMode||taskMatchesAdvancedFilter(t)))
+  const pendingLike=all.filter(t=>['pending','due-today'].includes(t.status))
+  const done=all.filter(t=>t.status==='done')
+  const overdue=all.filter(t=>t.status==='overdue')
+  q('#pending-count').textContent=pendingLike.length
+  q('#done-count').textContent=done.length
+  q('#overdue-count').textContent=overdue.length
+  let rows=taskMode==='calendar'?all:(taskView==='active'?pendingLike:taskView==='done'?done:overdue)
+  if(selectedTaskPatientId)rows=rows.filter(t=>t.patientId===selectedTaskPatientId)
+  q('#task-title').textContent=selectedTaskPatientId?patientName(selectedTaskPatientId)+'的随访任务':'随访任务查看'
+  if(taskMode==='calendar'){renderCalendar(rows);return}
+  if(!rows.length){
+    const empty=document.createElement('div');empty.className='empty';empty.textContent='当前没有此状态的随访任务。'
+    box.append(empty);return
+  }
+  rows.forEach(task=>{
+    const plan=planById(task.planId)
+    const card=document.createElement('article');card.className='task-card'
+    const content=document.createElement('div');content.className='content'
+    const tag=document.createElement('span')
+    tag.className='tag '+(task.status==='overdue'?'danger':task.status==='done'?'success':'warning')
+    tag.textContent=task.status==='overdue'?'未拜访':task.status==='done'?'已完成':(task.status==='due-today'?'待执行 · 今日':'待执行')
+    const name=document.createElement('strong');name.textContent=patientName(task.patientId)+' · '+(plan?plan.name:'')
+    const desc=document.createElement('p');desc.textContent='计划时间：'+task.scheduledDate
+    content.append(tag,name,desc)
+    const button=document.createElement('button');button.type='button'
+    if(task.status==='done'){
+      button.className='secondary-btn';button.textContent='查看记录'
+      button.onclick=()=>openTaskForm(task,plan,true)
+    }else{
+      button.className='start'+(task.status==='overdue'?' overdue':'')
+      button.textContent=task.status==='overdue'?'补录随访':'开始随访'
+      button.onclick=()=>openTaskForm(task,plan,false)
+    }
+    card.append(content,button)
+    box.append(card)
+  })
+}
+
+function renderTaskCard(task,container){
+  const plan=planById(task.planId);const card=document.createElement('article');card.className='task-card';const content=document.createElement('div');content.className='content';const tag=document.createElement('span');tag.className='tag '+(task.status==='overdue'?'danger':task.status==='done'?'success':'warning');tag.textContent=task.status==='overdue'?'未拜访':task.status==='done'?'已完成':(task.status==='due-today'?'待执行 · 今日':'待执行');const name=document.createElement('strong');name.textContent=patientName(task.patientId)+' · '+(plan?plan.name:'');const desc=document.createElement('p');desc.textContent='计划时间：'+task.scheduledDate;content.append(tag,name,desc);const button=document.createElement('button');button.type='button';if(task.status==='done'){button.className='secondary-btn';button.textContent='查看记录';button.onclick=()=>openTaskForm(task,plan,true)}else{button.className='start'+(task.status==='overdue'?' overdue':'');button.textContent=task.status==='overdue'?'补录随访':'开始随访';button.onclick=()=>openTaskForm(task,plan,false)}card.append(content,button);container.append(card)
+}
+function renderCalendar(rows){const box=q('#task-content');const wrap=document.createElement('section');wrap.className='calendar-wrap';const head=document.createElement('header');head.className='calendar-head';head.innerHTML='<button type="button" id="prev-month">‹</button><strong>2026 年 '+(calendarMonth+1)+' 月</strong><button type="button" id="next-month">›</button>';const grid=document.createElement('div');grid.className='calendar-grid';['一','二','三','四','五','六','日'].forEach(d=>{const w=document.createElement('span');w.className='calendar-week';w.textContent=d;grid.append(w)});const offset=(new Date(2026,calendarMonth,1).getDay()+6)%7,days=new Date(2026,calendarMonth+1,0).getDate();for(let i=0;i<offset;i++)grid.append(document.createElement('span'));for(let day=1;day<=days;day++){const date='2026-'+String(calendarMonth+1).padStart(2,'0')+'-'+String(day).padStart(2,'0');const dayTasks=rows.filter(t=>t.scheduledDate===date);const statuses=[...new Set(dayTasks.map(t=>t.status==='due-today'||t.status==='pending'?'pending':t.status))];const b=document.createElement('button');b.type='button';b.className='calendar-day'+(dayTasks.length?' has-task':'')+(date===selectedCalendarDate?' selected':'');b.innerHTML=day+(statuses.length?'<span class="calendar-statuses">'+statuses.map(s=>'<i class="calendar-status '+(s==='pending'?'':s)+'" title="'+(s==='pending'?'待执行':s==='done'?'已完成':'未拜访')+'"></i>').join('')+'</span>':'');b.onclick=()=>{selectedCalendarDate=date;renderTasks()};grid.append(b)}const detail=document.createElement('div');detail.className='calendar-detail';const selected=rows.filter(t=>t.scheduledDate===selectedCalendarDate);detail.innerHTML='<h3>'+selectedCalendarDate+' 的任务</h3>';if(!selected.length)detail.innerHTML+='<div class="empty">该日期没有随访任务。</div>';else selected.forEach(t=>renderTaskCard(t,detail));wrap.append(head,grid,detail);box.append(wrap);q('#prev-month').onclick=()=>{calendarMonth=Math.max(0,calendarMonth-1);renderTasks()};q('#next-month').onclick=()=>{calendarMonth=Math.min(11,calendarMonth+1);renderTasks()}}
+
+function renderManualFollowupOptions(){
+  const templates=source.get('templates').filter(t=>t.status==='active'&&(t.visibility==='public'||t.creatorId===nurseId))
+  const patients=myBoundPatients()
+  const templateSelect=q('#manual-template'),patientSelect=q('#manual-patient')
+  templateSelect.replaceChildren();patientSelect.replaceChildren()
+  templates.forEach(template=>{const option=document.createElement('option');option.value=template.id;option.textContent=template.name;templateSelect.append(option)})
+  patients.forEach(patient=>{const option=document.createElement('option');option.value=patient.id;option.textContent=patient.name+' · '+patient.phone;patientSelect.append(option)})
+  if(selectedTaskPatientId&&patients.some(patient=>patient.id===selectedTaskPatientId))patientSelect.value=selectedTaskPatientId
+  q('#manual-followup-error').textContent=templates.length&&patients.length?'':'当前没有可用的模板或已绑定患者。'
+  q('#manual-followup-form button[type="submit"]').disabled=!templates.length||!patients.length
+}
+q('#manual-followup').onclick=()=>{renderManualFollowupOptions();q('#manual-followup-drawer').classList.add('open')}
+q('#manual-followup-cancel').onclick=()=>q('#manual-followup-drawer').classList.remove('open')
+q('#manual-followup-form').onsubmit=e=>{
+  e.preventDefault()
+  const template=source.get('templates').find(item=>item.id===q('#manual-template').value)
+  const patient=source.get('patients').find(item=>item.id===q('#manual-patient').value)
+  if(!template||!patient){q('#manual-followup-error').textContent='请选择随访模板和患者。';return}
+  q('#manual-followup-drawer').classList.remove('open')
+  openTaskForm({id:'manual-'+Date.now(),patientId:patient.id,planId:'',status:'manual'},{templateVersionSnapshot:{id:template.id,name:template.name,fields:template.fields}},false,true)
+}
+
+function updateFollowupHealth(patientId,values){
+  const health=source.getHealthRecord(patientId)
+  if(!health)return
+  const changes=health.changes||[]
+  let changed=false
+  health.record.sections.forEach(section=>section.fields.forEach(field=>{
+    const value=values[field.id]
+    if(field.source==='follow-up'&&value&&field.value!==value){
+      changes.push({id:'change-'+Date.now()+'-'+field.id,fieldId:field.id,operator:'nurse',updatedAt:'2026-09-09 刚刚',previousValue:field.value,currentValue:value})
+      field.value=value;field.updatedAt='2026-09-09 刚刚';changed=true
+    }
+  }))
+  if(changed){health.record.updatedAt='2026-09-09 刚刚';health.changes=changes;source.setHealthRecord(patientId,health)}
+}
+
+function openTaskForm(task,plan,readOnly,manual=false){
+  currentTask={task,plan,readOnly,manual}
+  const record=readOnly?source.get('records').find(r=>r.taskId===task.id):null
+  q('#task-form-title').textContent=readOnly?'随访记录':(manual?'随时填写随访':task.status==='overdue'?'补录随访内容':'填写随访内容')
+  q('#task-form-hint').textContent=readOnly?('完成时间：'+(record?record.submittedAt:'')):(manual?'本次随访不关联既有任务；提交后将更新健康档案并保留随访记录。':task.status==='overdue'?'补录后会保留原任务日期与本次提交时间。':'提交后将自动更新该患者健康档案，并保留本次随访记录。')
+  const fields=q('#task-form-fields')
+  const templateFields=(plan&&plan.templateVersionSnapshot&&plan.templateVersionSnapshot.fields)||[]
+  window.FollowupForm.renderFields(fields,templateFields,{fieldClass:'field',readOnly,values:record&&record.values})
+  q('#task-form-error').textContent=''
+  q('#task-submit').hidden=readOnly
+  q('#task-drawer').classList.add('open')
+}
+q('#task-cancel').onclick=()=>q('#task-drawer').classList.remove('open')
+q('#task-form').onsubmit=e=>{
+  e.preventDefault()
+  if(currentTask.readOnly){q('#task-drawer').classList.remove('open');return}
+  const {values,missing}=window.FollowupForm.collectValues(q('#task-form-fields'))
+  if(missing){q('#task-form-error').textContent='请完整填写必填项。';return}
+  if(!currentTask.manual){
+    const tasks=source.get('tasks')
+    const task=tasks.find(x=>x.id===currentTask.task.id)
+    if(task)task.status='done'
+    source.set('tasks',tasks)
+  }
+  const records=source.get('records')
+  const record={id:'record-'+Date.now(),taskId:currentTask.manual?'':currentTask.task.id,planId:currentTask.task.planId,patientId:currentTask.task.patientId,nurseId,templateId:currentTask.manual?currentTask.plan.templateVersionSnapshot.id:currentTask.plan.templateId,templateName:currentTask.manual?currentTask.plan.templateVersionSnapshot.name:'',templateFields:currentTask.plan.templateVersionSnapshot.fields,values,followupMethod:currentTask.manual?'immediate':q('#task-method').value,submittedAt:new Date().toLocaleString('sv-SE').replace('T',' ').slice(0,16),submittedAtSort:new Date().toISOString()}
+  records.push(record)
+  source.set('records',records)
+  window.FollowupAlert.createForRecord(currentTask.manual?currentTask.plan.templateVersionSnapshot.id:currentTask.plan.templateId,record)
+  updateFollowupHealth(currentTask.task.patientId,values)
+  q('#task-drawer').classList.remove('open')
+  renderTasks()
+}
+document.querySelectorAll('[data-status]').forEach(btn=>btn.addEventListener('click',()=>{
+  taskView=btn.dataset.status
+  document.querySelectorAll('[data-status]').forEach(x=>x.classList.remove('active'))
+  btn.classList.add('active')
+  renderTasks()
+}))
+document.querySelectorAll('[data-task-mode]').forEach(btn=>btn.addEventListener('click',()=>{
+  taskMode=btn.dataset.taskMode
+  document.querySelectorAll('[data-task-mode]').forEach(x=>x.classList.toggle('active',x===btn))
+  q('#task-status-tabs').hidden=taskMode==='calendar'
+  renderTasks()
+}))
+q('#task-patient-search').oninput=renderTaskPatients
+
+/* ---------- 计划页签 ---------- */
+let selectedPatientId=source.getSelectedPatientId()||null
+let planScope='private'
+let selectedTemplateId=null
+let editingPlan=null
+
+function responsibleNurseId(patientId){
+  const binding=source.get('bindings').find(item=>item.patientId===patientId&&item.status==='bound')
+  if(binding)return binding.nurseId
+  const plan=source.get('plans').find(item=>item.patientId===patientId&&item.nurseId)
+  return plan?plan.nurseId:null
+}
+function doctorName(patientId){
+  const nurse=source.get('nurses').find(item=>item.id===responsibleNurseId(patientId))
+  return nurse?nurse.name+'医生':'未分配'
+}
+function initTaskDoctorFilter(){
+  if(!adminMode)return
+  const select=q('#task-doctor-filter')
+  select.hidden=false
+  source.get('nurses').forEach(nurse=>{
+    const option=document.createElement('option')
+    option.value=nurse.id
+    option.textContent=nurse.name+'医生'
+    select.append(option)
+  })
+  select.onchange=()=>{
+    const selected=select.value
+    if(selected&&selectedTaskPatientId&&responsibleNurseId(selectedTaskPatientId)!==selected)selectedTaskPatientId=null
+    renderTaskPatients()
+    renderTasks()
+  }
+}
+function initPlanDoctorFilter(){
+  if(!adminMode)return
+  const select=q('#plan-doctor-filter')
+  select.hidden=false
+  source.get('nurses').forEach(nurse=>{
+    const option=document.createElement('option')
+    option.value=nurse.id
+    option.textContent=nurse.name+'医生'
+    select.append(option)
+  })
+  select.onchange=()=>{
+    const selected=select.value
+    if(selected&&selectedPatientId&&responsibleNurseId(selectedPatientId)!==selected)selectedPatientId=null
+    renderPlanPatients()
+  }
+}
+
+function myBoundPatients(){
+  if(adminMode)return source.get('patients')
+  const bindings=source.get('bindings').filter(b=>b.nurseId===nurseId&&b.status==='bound')
+  const patients=source.get('patients')
+  return bindings.map(b=>patients.find(p=>p.id===b.patientId)).filter(Boolean)
+}
+
+function renderPlanPatients(){
+  const box=q('#plan-patient-list')
+  box.replaceChildren()
+  const keyword=q('#plan-patient-search').value.trim()
+  const doctorId=adminMode?q('#plan-doctor-filter').value:''
+  const list=myBoundPatients().filter(p=>(!doctorId||responsibleNurseId(p.id)===doctorId)&&(!keyword||(p.name+p.phone+doctorName(p.id)).includes(keyword)))
+  if(selectedPatientId&&!list.some(p=>p.id===selectedPatientId))selectedPatientId=null
+  if(!list.length){
+    const empty=document.createElement('div');empty.className='empty';empty.textContent='暂无已绑定患者。'
+    box.append(empty)
+    q('#plan-title').textContent=''
+    q('#plan-patient-phone').textContent=''
+    renderPlanList()
+    return
+  }
+  const allButton=document.createElement('button');allButton.type='button';allButton.className='plan-patient'+(!selectedPatientId?' active':'');allButton.textContent='全部患者';allButton.onclick=()=>{selectedPatientId=null;renderPlanPatients()};box.append(allButton)
+  list.forEach(patient=>{
+    const btn=document.createElement('button');btn.type='button';btn.className='plan-patient'+(patient.id===selectedPatientId?' active':'')
+    const title=document.createElement('span');title.className='patient-title'
+    const name=document.createElement('strong');name.textContent=patient.name
+    title.append(name)
+    if(adminMode){const doctor=document.createElement('span');doctor.className='doctor-name';doctor.textContent=doctorName(patient.id);title.append(doctor)}
+    const phone=document.createElement('span');phone.className='patient-phone';phone.textContent=patient.phone
+    btn.append(title,phone)
+    btn.onclick=()=>{selectedPatientId=patient.id;renderPlanPatients()}
+    box.append(btn)
+  })
+  const current=list.find(p=>p.id===selectedPatientId)
+  if(current){q('#plan-title').textContent=current.name+'的随访计划';q('#plan-patient-phone').textContent=current.phone;q('#create-plan').disabled=false;q('#create-plan').title=''}
+  else{q('#plan-title').textContent='全部患者的随访计划';q('#plan-patient-phone').textContent='';q('#create-plan').disabled=true;q('#create-plan').title='请选择一名患者后新建随访计划'}
+  renderPlanList()
+}
+q('#plan-patient-search').oninput=renderPlanPatients
+
+function renderPlanList(){
+  const box=q('#plan-list')
+  box.replaceChildren()
+  const doctorId=adminMode?q('#plan-doctor-filter').value:''
+  const plans=source.get('plans').filter(p=>(!selectedPatientId||p.patientId===selectedPatientId)&&(!doctorId||responsibleNurseId(p.patientId)===doctorId))
+  q('#active-plan-count').textContent=plans.filter(p=>p.status==='active').length
+  q('#ended-plan-count').textContent=plans.filter(p=>p.status==='ended').length
+  q('#cancelled-plan-count').textContent=plans.filter(p=>p.status==='cancelled').length
+  if(!plans.length){
+    const empty=document.createElement('div');empty.className='empty';empty.textContent='该患者暂无随访计划，可新建计划开始服务。'
+    box.append(empty);return
+  }
+  const statusTag={draft:['tag muted','草稿'],active:['tag success','生效中'],ended:['tag muted','已结束'],cancelled:['tag danger','已取消']}
+  plans.forEach(plan=>{
+    const [cls,text]=statusTag[plan.status]||['tag muted',plan.status]
+    const card=document.createElement('article');card.className='plan-card'
+    const patient=source.get('patients').find(p=>p.id===plan.patientId)
+    card.innerHTML='<div class="head"><div><h3>'+plan.name+'</h3><p>'+((patient?patient.name:'未知患者')+' · '+(patient?patient.phone:''))+'</p><p>'+plan.firstDate+' · '+planScheduleText(plan)+'</p></div><i class="'+cls+'">'+text+'</i></div>'
+    const ops=document.createElement('div');ops.className='ops'
+    const viewTemplate=document.createElement('button');viewTemplate.type='button';viewTemplate.className='text-btn';viewTemplate.textContent='查看模板：'+plan.templateVersionSnapshot.name
+    viewTemplate.onclick=()=>parent.postMessage({type:'prototype:navigation-request',pageId:'N06'},'*')
+    ops.append(viewTemplate)
+    if(plan.status==='active'){
+      const edit=document.createElement('button');edit.type='button';edit.className='text-btn';edit.textContent='编辑'
+      edit.onclick=()=>openPlanForm(plan)
+      const cancel=document.createElement('button');cancel.type='button';cancel.className='text-btn danger';cancel.textContent='取消计划'
+      cancel.onclick=()=>ask('确认取消该随访计划？','取消后不再生成新的随访任务，已生成的任务不受影响。',()=>{
+        const plans=source.get('plans')
+        const target=plans.find(p=>p.id===plan.id)
+        if(target)target.status='cancelled'
+        source.set('plans',plans)
+        renderPlanList()
+      })
+      ops.append(edit,cancel)
+    }
+    card.append(ops)
+    box.append(card)
+  })
+}
+
+function availableTemplates(scope){
+  return source.get('templates').filter(t=>t.visibility===scope&&t.status==='active')
+}
+
+function renderTemplateOptions(){
+  const box=q('#template-options')
+  box.replaceChildren()
+  const rows=availableTemplates(planScope)
+  if(!rows.length){
+    box.innerHTML='<p class="notice">当前没有可用于新建计划的模板。</p>'
+    selectedTemplateId=null
+    return
+  }
+  if(!rows.some(t=>t.id===selectedTemplateId))selectedTemplateId=rows[0].id
+  rows.forEach(t=>{
+    const btn=document.createElement('button');btn.type='button';btn.className='template-option'+(t.id===selectedTemplateId?' selected':'')
+    btn.innerHTML='<strong>'+t.name+'</strong><span>'+t.fields.map(f=>f.label).join('、')+'</span>'
+    btn.onclick=()=>{
+      selectedTemplateId=t.id
+      document.querySelectorAll('.template-option').forEach(x=>x.classList.remove('selected'))
+      btn.classList.add('selected')
+      if(!q('#plan-name').value)q('#plan-name').value=t.name
+    }
+    box.append(btn)
+  })
+}
+document.querySelectorAll('[data-scope]').forEach(btn=>btn.addEventListener('click',()=>{
+  planScope=btn.dataset.scope
+  document.querySelectorAll('[data-scope]').forEach(x=>x.classList.remove('active'))
+  btn.classList.add('active')
+  renderTemplateOptions()
+}))
+q('#go-new-template').onclick=()=>parent.postMessage({type:'prototype:navigation-request',pageId:'N07'},'*')
+
+q('#plan-end-type').onchange=()=>{
+  const isDate=q('#plan-end-type').value==='date'
+  q('#plan-end-date-field').style.display=isDate?'':'none'
+  q('#plan-end-count-field').style.display=isDate?'none':''
+}
+
+const weekdays=['周日','周一','周二','周三','周四','周五','周六']
+function dayFromDate(value){return value?new Date(value+'T00:00:00').getDay():1}
+function dateFromDate(value){return value?Number(value.slice(-2)):1}
+function monthlyDays(schedule,start){const days=Array.isArray(schedule.dayOfMonth)?schedule.dayOfMonth:[schedule.dayOfMonth??dateFromDate(start)];return [...new Set(days.map(Number).filter(day=>day>=1&&day<=31))].sort((a,b)=>a-b)}
+function selectedMonthlyDays(){return Array.from(q('#plan-monthly-days').querySelectorAll('button.active')).map(button=>Number(button.value)).sort((a,b)=>a-b)}
+function syncScheduleFields(schedule={}){
+  const frequency=q('#plan-frequency').value
+  const field=q('#plan-frequency-day-field')
+  const label=q('#plan-frequency-day-label')
+  const select=q('#plan-frequency-day')
+  const monthly=q('#plan-monthly-days')
+  field.style.display=frequency==='daily'?'none':''
+  select.replaceChildren()
+  select.hidden=frequency==='monthly'
+  monthly.hidden=frequency!=='monthly'
+  if(frequency==='weekly'){
+    label.textContent='执行星期'
+    weekdays.forEach((day,index)=>{const option=document.createElement('option');option.value=String(index);option.textContent=day;select.append(option)})
+    select.value=String(schedule.weekday??dayFromDate(q('#plan-start').value))
+  }else if(frequency==='monthly'){
+    label.textContent='每月执行日（可多选）'
+    const selected=monthlyDays(schedule,q('#plan-start').value)
+    monthly.replaceChildren()
+    for(let day=1;day<=31;day+=1){const button=document.createElement('button');button.type='button';button.value=String(day);button.textContent=day;button.classList.toggle('active',selected.includes(day));button.onclick=()=>button.classList.toggle('active');monthly.append(button)}
+  }
+}
+function planScheduleText(plan){
+  const schedule=plan.schedule||{}
+  if(plan.frequency==='daily')return '每天 '+plan.executionTime
+  if(plan.frequency==='monthly')return '每月 '+monthlyDays(schedule,plan.firstDate).join('、')+' 日 '+plan.executionTime
+  return '每周 '+weekdays[schedule.weekday??dayFromDate(plan.firstDate)]+' '+plan.executionTime
+}
+q('#plan-frequency').onchange=()=>syncScheduleFields()
+
+function openPlanForm(plan){
+  editingPlan=plan
+  q('#plan-form-title').textContent='编辑随访计划'
+  q('#plan-name').value=plan.name
+  q('#plan-start').value=plan.firstDate
+  q('#plan-frequency').value=plan.frequency
+  q('#plan-time').value=plan.executionTime
+  syncScheduleFields(plan.schedule)
+  if(plan.endCondition.type==='date'){q('#plan-end-type').value='date';q('#plan-end-date').value=plan.endCondition.endDate}
+  else{q('#plan-end-type').value='occurrences';q('#plan-end-count').value=plan.endCondition.count}
+  q('#plan-end-type').onchange()
+  planScope=source.get('templates').find(t=>t.id===plan.templateId)?.visibility||'private'
+  selectedTemplateId=plan.templateId
+  document.querySelectorAll('[data-scope]').forEach(x=>x.classList.toggle('active',x.dataset.scope===planScope))
+  renderTemplateOptions()
+  q('#plan-form-error').textContent=''
+  q('#plan-drawer').classList.add('open')
+}
+q('#create-plan').onclick=()=>{
+  if(!selectedPatientId){q('#plan-form-error').textContent='请先选择患者。';return}
+  editingPlan=null
+  q('#plan-form-title').textContent='新建随访计划'
+  q('#plan-form').reset()
+  q('#plan-frequency').value='weekly'
+  q('#plan-time').value='09:00'
+  syncScheduleFields()
+  q('#plan-end-type').value='date'
+  q('#plan-end-type').onchange()
+  planScope='private'
+  document.querySelectorAll('[data-scope]').forEach(x=>x.classList.toggle('active',x.dataset.scope==='private'))
+  renderTemplateOptions()
+  q('#plan-form-error').textContent=''
+  q('#plan-drawer').classList.add('open')
+}
+q('#plan-cancel').onclick=()=>q('#plan-drawer').classList.remove('open')
+q('#plan-form').onsubmit=e=>{
+  e.preventDefault()
+  const name=q('#plan-name').value.trim()
+  const start=q('#plan-start').value
+  const frequency=q('#plan-frequency').value
+  const executionTime=q('#plan-time').value
+  const scheduleDay=q('#plan-frequency-day').value
+  const scheduleDays=selectedMonthlyDays()
+  const endType=q('#plan-end-type').value
+  const endDate=q('#plan-end-date').value
+  const endCount=q('#plan-end-count').value
+  if(!selectedTemplateId||!name||!start){q('#plan-form-error').textContent='请完整选择模板并填写计划信息。';return}
+  if(frequency==='weekly'&&!scheduleDay){q('#plan-form-error').textContent='请选择计划执行日。';return}
+  if(frequency==='monthly'&&!scheduleDays.length){q('#plan-form-error').textContent='请至少选择一个每月执行日。';return}
+  if(endType==='date'){
+    if(!endDate){q('#plan-form-error').textContent='请填写结束日期。';return}
+    if(endDate<start){q('#plan-form-error').textContent='结束日期不能早于首次随访日期。';return}
+  }else if(!endCount||Number(endCount)<1){q('#plan-form-error').textContent='请填写有效的执行次数。';return}
+  const template=source.get('templates').find(t=>t.id===selectedTemplateId)
+  const endCondition=endType==='date'?{type:'date',endDate}:{type:'occurrences',count:Number(endCount)}
+  const schedule=frequency==='weekly'?{weekday:Number(scheduleDay)}:frequency==='monthly'?{dayOfMonth:scheduleDays}:{ }
+  const plans=source.get('plans')
+  const isNewPlan=!editingPlan
+  if(editingPlan){
+    const target=plans.find(p=>p.id===editingPlan.id)
+    if(target){
+      target.name=name;target.firstDate=start;target.frequency=frequency
+      target.executionTime=executionTime;target.schedule=schedule;target.endCondition=endCondition
+    }
+  }else{
+    plans.unshift({
+      id:'plan-'+Date.now(),patientId:selectedPatientId,nurseId,name,firstDate:start,
+      frequency,executionTime,schedule,endCondition,
+      templateId:selectedTemplateId,templateVersionSnapshot:{name:template.name,fields:template.fields},
+      status:'active',nextDate:start
+    })
+  }
+  source.set('plans',plans)
+  q('#plan-drawer').classList.remove('open')
+  renderPlanPatients()
+  parent.postMessage({type:'prototype:state-changed',pageId:'N05',scenarioId:isNewPlan?'N05-S03':'N05-S02'},'*')
+}
+
+setupAdminAdvancedFilter()
+initTaskDoctorFilter()
+renderTasks()
+renderTaskPatients()
+initPlanDoctorFilter()
+renderPlanPatients()
+parent.postMessage({type:'prototype:page-ready',pageId:'N05'},'*')
+})()</script></body></html>
