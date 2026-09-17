@@ -91,6 +91,7 @@
       id: 'NM01', title: '活动申请账户（手机端）', type: 'html', protocol: 'prototype-v1', url: 'pages/nurse-mobile-login.html', viewport: 'H5',
       requirements: ['P2 · 活动申请账户'],
       requirementSources: ['来源：docs/需求确认.md · 功能列表'],
+      illustration: 'illustrations/nm01-mobile-account.png',
       overview: '申请人在手机端使用同一账户注册、登录和重置密码。', pageRole: '活动申请手机端账户入口。',
       businessRules: ['注册、登录和密码重置与 PC 端共用前端演示账户数据。'],
       states: [{ id: 'NM01-S01', title: '登录成功' }, { id: 'NM01-S02', title: '登录失败' }, { id: 'NM01-S03', title: '注册成功' }, { id: 'NM01-S04', title: '密码已重置' }],
