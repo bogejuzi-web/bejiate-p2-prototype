@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>活动申请表单</title><link rel="stylesheet" href="../activity-application.css">
+<body><div class="layout"><aside id="sidebar"></aside><main class="main">
+<header class="top"><div><h2>活动申请表单</h2><p>维护可复用的活动申请万能表单。</p></div><button class="primary" id="new">新建表单</button></header>
+<section id="list" class="list"></section>
+</main></div>
+<script src="../nurse-portal-source.js"></script><script src="../admin-portal-shell.js"></script><script src="../activity-application-shared.js"></script>
+<script>
+(()=>{
+  const q=s=>document.querySelector(s),api=window.ActivityApplication;
+  AdminPortalShell.mountSidebar('#sidebar','A11');
+  const esc=v=>String(v||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  function edit(id){ localStorage.removeItem('bjt-activity-new-form'); api.setEditingForm(id); api.navigate('A14') }
+  function render(){
+    const box=q('#list'); box.replaceChildren();
+    api.forms().forEach(f=>{
+      const refs=api.formReferenceCount(f.id),row=document.createElement('article'); row.className='row';
+      row.innerHTML='<div><h3>'+esc(f.name)+' <i class="tag '+(f.status==='published'?'success':'muted')+'">'+(f.status==='published'?'已发布':'已停用')+'</i></h3><p>V'+(f.version||1)+' · '+(f.fields||[]).length+' 个字段 · 被 '+refs+' 个活动计划引用</p><p>更新于 '+esc(f.updatedAt)+'</p></div>';
+      const ops=document.createElement('div'); ops.className='ops';
+      const e=document.createElement('button'); e.className='text-btn'; e.textContent='编辑'; e.onclick=()=>edit(f.id); ops.append(e);
+      const d=document.createElement('button'); d.className='text-btn danger-text'; d.textContent='删除'; d.onclick=()=>{
+        if(refs){ alert('该表单正在被活动计划引用，不能删除。'); return }
+        if(confirm('确认删除该表单？')){ api.set('activityForms',api.forms().filter(x=>x.id!==f.id)); render() }
+      }; ops.append(d); row.append(ops); box.append(row);
+    });
+    if(!box.children.length) box.innerHTML='<div class="empty">暂无活动申请表单。</div>';
+  }
+  q('#new').onclick=()=>{ localStorage.setItem('bjt-activity-new-form','1'); api.setEditingForm(''); api.navigate('A14') };
+  render(); parent.postMessage({type:'prototype:page-ready',pageId:'A11'},'*');
+})();
+</script></body></html>
