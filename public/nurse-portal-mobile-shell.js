@@ -1,7 +1,7 @@
 ;(function () {
   var STYLE_ID = 'nurse-mobile-shell-style'
   var NAV_ITEMS = [
-    { id: 'NM11', label: '活动' },
+    { id: 'NM13', label: '计划' }, { id: 'NM11', label: '活动' },
     { id: 'NM06', label: '我的' }
   ]
 
@@ -12,7 +12,8 @@
     '.m-topbar h1{flex:1;margin:0;font-size:16px;font-weight:500;text-align:center}' +
     '.m-topbar .m-back-spacer{width:44px}' +
     '.m-content{flex:1;padding:16px;padding-bottom:76px;overflow-y:auto}' +
-    '.m-bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:5;display:grid;grid-template-columns:repeat(2,1fr);background:#fff;border-top:1px solid #dddddd}' +
+    '.m-content>.plan-card{display:none}' +
+    '.m-bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:5;display:grid;grid-template-columns:repeat(3,1fr);background:#fff;border-top:1px solid #dddddd}' +
     '.m-bottom-nav button{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 0;border:0;background:transparent;color:#41454d;font-size:12px}' +
     '.m-bottom-nav button .dot{width:6px;height:6px;border-radius:9999px;background:transparent}' +
     '.m-bottom-nav button[aria-current="true"]{color:#181d26;font-weight:500}' +
@@ -39,7 +40,12 @@
   function mountShell(options) {
     ensureStyle()
     options = options || {}
+    // 独立原型页可能在 HTML 解析 body 前执行脚本，确保挂载容器始终存在。
     var appRoot = document.body
+    if (!appRoot) {
+      appRoot = document.createElement('body')
+      document.documentElement.appendChild(appRoot)
+    }
     appRoot.replaceChildren()
     var app = document.createElement('div')
     app.className = 'm-app'

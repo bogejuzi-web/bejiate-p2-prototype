@@ -1,8 +1,8 @@
 ;(function () {
   var STYLE_ID = 'admin-shell-style'
   var NAV_ITEMS = [
-    { id: 'A11', label: '活动表单' },
-    { id: 'A12', label: '活动审批' }
+    { id: 'A10', label: '代表管理' }, { id: 'A11', label: '活动表单' },
+    { id: 'A13', label: '活动计划' }, { id: 'A12', label: '活动审批' }
   ]
 
   var CSS = '' +

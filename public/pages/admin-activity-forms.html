@@ -127,11 +127,12 @@ function ask(title,copy,action){q('#confirm-title').textContent=title;q('#confir
 q('#confirm-cancel').onclick=()=>q('#confirm').classList.remove('open')
 q('#confirm-ok').onclick=()=>{q('#confirm').classList.remove('open');pending&&pending();pending=null}
 
-/* 只维护唯一一份活动申请表单：取已有第一条，没有则初始化一份空表单 */
 function loadForm(){
   const rows=source.get('activityForms')
-  const existing=rows[0]
-  return existing?JSON.parse(JSON.stringify(existing)):{id:'activity-form-'+Date.now(),name:'活动申请表单',status:'disabled',updatedAt:'2026-09-09 刚刚',fields:[]}
+  const editingId=window.ActivityApplication&&window.ActivityApplication.editingForm()
+  const creating=localStorage.getItem('bjt-activity-new-form')==='1'||localStorage.getItem('bjt-activity-plan-form-return')==='1'
+  const existing=creating?null:(rows.find(item=>item.id===editingId)||rows[0])
+  return existing?JSON.parse(JSON.stringify(existing)):{id:'activity-form-'+Date.now(),name:'活动申请表单',version:1,status:'disabled',updatedAt:'2026-09-16 刚刚',fields:[]}
 }
 
 let form=loadForm()
@@ -526,7 +527,12 @@ document.querySelectorAll('.field-type-btn').forEach(btn=>btn.addEventListener('
   renderFieldList()
 }))
 
-q('#cancel-btn').onclick=()=>window.location.reload()
+q('#cancel-btn').onclick=()=>{
+  const returnToPlan=localStorage.getItem('bjt-activity-plan-form-return')==='1'
+  localStorage.removeItem('bjt-activity-new-form')
+  localStorage.removeItem('bjt-activity-plan-form-return')
+  parent.postMessage({type:'prototype:navigation-request',pageId:returnToPlan?'A13':'A11'},'*')
+}
 q('#save-btn').onclick=()=>{
   const name=q('#form-name').value.trim()
   if(!name){alert('请填写表单名称。');return}
@@ -534,17 +540,20 @@ q('#save-btn').onclick=()=>{
   if(fields.some(f=>!f.label.trim())){alert('请完整填写每个字段的标识名。');return}
   if(fields.some(f=>(f.type==='option'||f.type==='multi-option')&&!(f.options||[]).filter(o=>o.trim()).length)){alert('单选或多选字段需至少保留一个有效选项。');return}
   const rows=source.get('activityForms')
-  const updated={id:form.id,name,status:form.status,updatedAt:'2026-09-09 刚刚',fields}
-  if(rows.length)rows[0]=updated
+  const index=rows.findIndex(item=>item.id===form.id)
+  const updated={id:form.id,name,status:form.status,version:(form.version||1)+(index>=0?1:0),updatedAt:'2026-09-16 刚刚',fields}
+  if(index>=0)rows[index]=updated
   else rows.push(updated)
   source.set('activityForms',rows)
+  localStorage.removeItem('bjt-activity-new-form')
   form=updated
   const toast=document.createElement('div');toast.className='toast-save';toast.textContent='活动申请表单已保存'
   document.body.append(toast)
   window.setTimeout(()=>toast.remove(),1200)
+  if(localStorage.getItem('bjt-activity-plan-form-return')==='1'){localStorage.removeItem('bjt-activity-plan-form-return');window.ActivityApplication.setEditingForm(updated.id);parent.postMessage({type:'prototype:navigation-request',pageId:'A13'},'*')}
 }
 
 renderStatus()
 renderFieldList()
-parent.postMessage({type:'prototype:page-ready',pageId:'A11'},'*')
+parent.postMessage({type:'prototype:page-ready',pageId:'A14'},'*')
 })()</script></body></html>

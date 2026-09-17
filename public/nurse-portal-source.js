@@ -3,11 +3,11 @@
 
   var SEED = {
     nurses: [
-      { id: 'nurse-001', name: '刘敏', account: 'nurse01', password: '123456', department: '内科', status: 'active' },
-      { id: 'nurse-002', name: '张倩', account: 'nurse02', password: '123456', department: '内科', status: 'active' },
-      { id: 'nurse-003', name: '周芳', account: 'nurse03', password: '123456', department: '外科', status: 'disabled' },
-      { id: 'nurse-004', name: '赵宁', account: 'nurse04', password: '123456', department: '心内科', status: 'active' },
-      { id: 'nurse-005', name: '胡珊', account: 'nurse05', password: '123456', department: '康复科', status: 'disabled' }
+      { id: 'nurse-001', name: '刘敏', account: 'nurse01', password: '123456', department: '内科', region: '华东大区', company: '贝捷泰上海公司', status: 'active' },
+      { id: 'nurse-002', name: '张倩', account: 'nurse02', password: '123456', department: '内科', region: '华北大区', company: '贝捷泰北京公司', status: 'active' },
+      { id: 'nurse-003', name: '周芳', account: 'nurse03', password: '123456', department: '外科', region: '华南大区', company: '贝捷泰广州公司', status: 'disabled' },
+      { id: 'nurse-004', name: '赵宁', account: 'nurse04', password: '123456', department: '心内科', region: '华东大区', company: '贝捷泰杭州公司', status: 'active' },
+      { id: 'nurse-005', name: '胡珊', account: 'nurse05', password: '123456', department: '康复科', region: '西南大区', company: '贝捷泰成都公司', status: 'disabled' }
     ],
     admins: [
       { id: 'admin-001', name: '管理员', account: 'admin', password: '123456', role: '平台管理员' }
@@ -322,7 +322,7 @@
     ],
     activityForms: [
       {
-        id: 'activity-form-001', name: '患教会议申请表', status: 'published', updatedAt: '2026-09-15 09:30',
+        id: 'activity-form-001', name: '患教会议申请表', version: 1, status: 'published', updatedAt: '2026-09-15 09:30',
         fields: [
           { id: 'activity-theme', label: '活动主题', type: 'text', required: true },
           { id: 'activity-type', label: '活动类型', type: 'option', required: true, options: ['线下患教会', '线上宣教', '小组交流'], displayMode: 'dropdown' },
@@ -332,6 +332,38 @@
           { id: 'activity-date', label: '活动日期', type: 'date', required: true },
           { id: 'activity-poster', label: '活动海报', type: 'image', required: false }
         ]
+      }
+    ],
+    activityPlans: [
+      {
+        id: 'activity-plan-001', name: '2026 秋季慢病患教计划', status: 'published', quotaMode: 'limited', totalQuota: 100,
+        formId: 'activity-form-001', formName: '患教会议申请表', formVersion: 1,
+        formSnapshot: {
+          id: 'activity-form-001', name: '患教会议申请表', version: 1,
+          fields: [
+            { id: 'activity-theme', label: '活动主题', type: 'text', required: true },
+            { id: 'activity-type', label: '活动类型', type: 'option', required: true, options: ['线下患教会', '线上宣教', '小组交流'], displayMode: 'dropdown' },
+            { id: 'target-groups', label: '适用人群', type: 'multi-option', required: false, options: ['高血压患者', '糖尿病患者', '术后康复患者'], displayMode: 'flat' },
+            { id: 'expected-attendees', label: '预计参与人数', type: 'number', required: true },
+            { id: 'budget-usage-rate', label: '预算使用率', type: 'percentage', required: false, allowDecimal: true, decimalLimit: 1 },
+            { id: 'activity-date', label: '活动日期', type: 'date', required: true },
+            { id: 'activity-poster', label: '活动海报', type: 'image', required: false }
+          ]
+        },
+        allocations: [
+          { nurseId: 'nurse-001', quota: 10 }, { nurseId: 'nurse-002', quota: 10 }, { nurseId: 'nurse-003', quota: 10 },
+          { nurseId: 'nurse-004', quota: 10 }, { nurseId: 'nurse-005', quota: 10 }
+        ],
+        createdAt: '2026-09-15 09:30', updatedAt: '2026-09-15 09:30'
+      },
+      {
+        id: 'activity-plan-002', name: '线上健康宣教开放计划', status: 'published', quotaMode: 'unlimited',
+        formId: 'activity-form-001', formName: '患教会议申请表', formVersion: 1,
+        formSnapshot: { id: 'activity-form-001', name: '患教会议申请表', version: 1, fields: [
+          { id: 'activity-theme', label: '活动主题', type: 'text', required: true },
+          { id: 'activity-type', label: '活动类型', type: 'option', required: true, options: ['线下患教会', '线上宣教', '小组交流'], displayMode: 'dropdown' },
+          { id: 'expected-attendees', label: '预计参与人数', type: 'number', required: true }, { id: 'activity-date', label: '活动日期', type: 'date', required: true }
+        ] }, allocations: [], createdAt: '2026-09-15 09:30', updatedAt: '2026-09-15 09:30'
       }
     ],
     activityApplications: [

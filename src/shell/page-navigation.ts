@@ -30,8 +30,8 @@ export class PageNavigation {
       })
     })
 
-    const frontendOrder = ['N01', 'NM01', 'N10', 'NM11']
-    const backendOrder = ['A01', 'A11', 'A12']
+    const frontendOrder = ['N01', 'NM01', 'N12', 'N10', 'NM13', 'NM11']
+    const backendOrder = ['A01', 'A10', 'A11', 'A13', 'A12']
     const orderPages = (ids: string[]) => ids.map((id) => visible.find((page) => page.id === id)).filter((page): page is PrototypePage => Boolean(page))
     renderGroups([
       { title: '前端', pages: orderPages(frontendOrder) },

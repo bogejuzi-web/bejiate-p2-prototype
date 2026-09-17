@@ -1,6 +1,6 @@
 ;(function () {
   var STYLE_ID = 'nurse-shell-style'
-  var NAV_ITEMS = [{ id: 'N10', label: '活动申请' }]
+  var NAV_ITEMS = [{ id: 'N12', label: '活动计划' }, { id: 'N10', label: '活动申请' }]
 
   var CSS = '' +
     '.side{display:flex;flex-direction:column;padding:24px 14px;background:#181d26;color:#fff}' +
